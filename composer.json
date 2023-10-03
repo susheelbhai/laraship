@@ -7,6 +7,16 @@
             "Susheelbhai\\Laraship\\": "src/"
         }
     },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Susheelbhai\\Laraship\\LarashipServiceProvider"
+            ],
+            "aliases": {
+                "Larapay": "Susheelbhai\\Laraship\\Facade"
+            }
+        }
+    },
     "authors": [
         {
             "name": "Susheel Kumar Singh",
