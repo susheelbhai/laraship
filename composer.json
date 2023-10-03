@@ -1,0 +1,18 @@
+{
+    "name": "susheelbhai/laraship",
+    "description": "suppots all types of shipment",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Susheelbhai\\Laraship\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Susheel Kumar Singh",
+            "email": "susheelkrsingh306@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
