@@ -1,6 +1,6 @@
 <?php
 
-namespace Susheelbhai\WhatsApp\Commands;
+namespace Susheelbhai\Laraship\Commands;
 
 use Illuminate\Console\Command;
 

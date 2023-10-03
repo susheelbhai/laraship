@@ -22,7 +22,7 @@ class LarashipServiceProvider extends ServiceProvider
         $this->registerPublishable();
         if ($this->app->runningInConsole()) {
             $this->commands([
-                \Susheelbhai\WhatsApp\Commands\UpdateENV::class,
+                \Susheelbhai\Laraship\Commands\UpdateENV::class,
             ]);
         }
     }
