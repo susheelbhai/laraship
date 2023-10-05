@@ -11,6 +11,7 @@ class LarashipServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/laraship.php','laraship');
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'laraship');
         $this->app->bind('laraship', function(){
             return new LarashipService();
         });
