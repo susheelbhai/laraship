@@ -3,27 +3,13 @@
 namespace Susheelbhai\Laraship\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Susheelbhai\Laraship\Services\Facades\Laraship;
+use Laraship;
 
 class HomeController extends Controller
 {
-    
-    public function __construct()
-    {
-       
-    }
-
     public function checkBalance()
     {
-       $data = Laraship::checkBalance();
-       if($data['success'] == 'true'){
-        $balance = $data['balance'];
-       }
-       else{
-        $balance = $data['message'];
-       }
-        return view('laraship::index', compact('balance'));
-
+        $data = Laraship::checkBalance();
+        return view('laraship::index', compact('data'));
     }
-    
 }

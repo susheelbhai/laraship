@@ -33,9 +33,9 @@ class PickupLocationRepository
         try {
             $request = new Request('GET', 'https://apiv2.shiprocket.in/v1/external/settings/company/pickup', $this->headers);
             $res = $client->sendAsync($request)->wait();
-            return  $response = array('success'=> 'true', 'data'=> json_decode($res->getBody())->data);
+            return  $response = array('success'=> 'true', 'data'=> (array) json_decode($res->getBody())->data);
         } catch (\Exception $error) {
-            return  $response = array('success'=> 'false', 'message'=> $error->getMessage());
+            return  $response = array('success'=> 'false', 'data'=>['shipping_address'=>[]], 'message'=> $error->getMessage());
         }
     }
     public function createLocation($input)
@@ -57,7 +57,7 @@ class PickupLocationRepository
         try {
             $request = new Request('POST', 'https://apiv2.shiprocket.in/v1/external/settings/company/addpickup', $this->headers, $body);
             $res = $client->sendAsync($request)->wait();
-            return  $response = array('success'=> 'true', 'data'=> json_decode($res->getBody())->data);
+            return  $response = array('success'=> 'true', 'data'=> (array) json_decode($res->getBody())->data);
         } catch (\Exception $error) {
             return  $response = array('success'=> 'false', 'message'=> $error->getMessage());
         }

@@ -2,6 +2,7 @@
 
 namespace Susheelbhai\Laraship;
 
+use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\ServiceProvider;
 use Susheelbhai\Laraship\Services\LarashipService;
 
@@ -15,6 +16,8 @@ class LarashipServiceProvider extends ServiceProvider
         $this->app->bind('laraship', function(){
             return new LarashipService();
         });
+        $loader = AliasLoader::getInstance();
+        $loader->alias('Laraship', \Susheelbhai\Laraship\Services\Facades\Laraship::class);
     }
 
     
