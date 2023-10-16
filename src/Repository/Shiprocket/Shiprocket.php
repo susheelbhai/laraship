@@ -30,11 +30,11 @@ class Shiprocket
             $res = $client->sendAsync($request)->wait();
             // dd(json_decode($res->getBody())->data);
             $balance =  '₹ '. number_format(json_decode($res->getBody())->data->balance_amount,2) ;
-            return  $response = array('success'=> 'true', 'data'=>['balance'=> $balance]);
+            return  $response = array('success'=> 'true', 'balance'=> $balance);
         } catch (\Exception $error) {
-            return  $response = array('success'=> 'false', 'data'=>['balance'=> $error->getMessage()]);
+            return  $response = array('success'=> 'false', 'message'=> $error->getMessage());
         } catch (BadResponseException $error) {
-            return  $response = array('success'=> 'false', 'data'=>['balance'=> $error->getMessage()]);
+            return  $response = array('success'=> 'false', 'message'=> $error->getMessage());
         }
         
     }

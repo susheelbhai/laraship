@@ -24,7 +24,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($data['data'] as $i)
+                    @forelse ($data as $i)
                         <tr>
                             <td>{{ $i->id ?? '' }}</td>
                             <td>{{ $i->created_at ?? '' }}</td>
@@ -44,7 +44,11 @@
                     @empty
                         <tr>
                             <td colspan="7">
-                                {{ $data['message'] }}
+                                @if ($success == 'true')
+                                    No Data Found
+                                @else
+                                    Something went wrong
+                                @endif
                             </td>
                         </tr>
                     @endforelse

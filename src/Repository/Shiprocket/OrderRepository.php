@@ -4,6 +4,8 @@ namespace Susheelbhai\Laraship\Repository\Shiprocket;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request;
+use Illuminate\Support\Facades\Http;
+use GuzzleHttp\Exception\BadResponseException;
 
 class OrderRepository
 {
@@ -29,22 +31,18 @@ class OrderRepository
         try {
             $request = new Request('GET', 'https://apiv2.shiprocket.in/v1/external/orders', $this->headers);
             $res = $client->sendAsync($request)->wait();
-            return  $response = array('success' => 'true', 'data' => (array) json_decode($res->getBody())->data);
+            return  $response = array('success' => 'true', 'data' => json_decode($res->getBody())->data);
         } catch (\Exception $error) {
-            return  $response = array('success' => 'false', 'data' => [], 'message' => $error->getMessage());
+            return  $response = array('success' => 'false', 'message' => $error->getMessage());
         }
     }
 
     public function order($id)
     {
         $client = new Client();
-        try {
-            $request = new Request('GET', 'https://apiv2.shiprocket.in/v1/external/orders/show/' . $id, $this->headers);
-            $res = $client->sendAsync($request)->wait();
-            return  $response = array('success' => 'true', 'data' => (array) json_decode($res->getBody())->data);
-        } catch (\Exception $error) {
-            return  $response = array('success' => 'false', 'data' => [], 'message' => $error->getMessage());
-        }
+        $request = new Request('GET', 'https://apiv2.shiprocket.in/v1/external/orders/show/' . $id, $this->headers);
+        $res = $client->sendAsync($request)->wait();
+        return json_decode($res->getBody())->data;
     }
     public function cancelOrder($id)
     {
@@ -58,7 +56,7 @@ class OrderRepository
         try {
             $request = new Request('POST', 'https://apiv2.shiprocket.in/v1/external/orders/cancel', $this->headers, $body);
             $res = $client->sendAsync($request)->wait();
-            return  $response = array('success' => 'true', 'data' => (array) json_decode($res->getBody()));
+            return  $response = array('success' => 'true', 'data' => json_decode($res->getBody()));
         } catch (\Exception $error) {
             return  $response = array('success' => 'false', 'message' => $error->getMessage());
         }
@@ -120,7 +118,7 @@ class OrderRepository
         try {
             $request = new Request('POST', 'https://apiv2.shiprocket.in/v1/external/orders/create/adhoc', $this->headers, $body);
             $res = $client->sendAsync($request)->wait();
-            return  $response = array('success' => 'true', 'data' => (array) json_decode($res->getBody()));
+            return  $response = array('success' => 'true', 'data' => json_decode($res->getBody()));
         } catch (\Exception $error) {
             return  $response = array('success' => 'false', 'message' => $error->getMessage());
         }

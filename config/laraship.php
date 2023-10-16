@@ -4,8 +4,8 @@
 return [
     'default' => [
        'provider' => 'shiprocket',
-       'middleware' => 'auth_admin',
-       'guard' => 'admin',
+       'middleware' => 'auth',
+       'guard' => 'web',
     ],
     'shiprocket'=>[
         'email' => env('SHIPROCKET_EMAIL', ''),

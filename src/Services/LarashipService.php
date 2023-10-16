@@ -12,6 +12,12 @@ use Susheelbhai\Laraship\Repository\Shiprocket\Shiprocket;
 class LarashipService
 {
 
+    public function authenticate()
+    {
+        $repo = new Shiprocket();
+        return $repo->authenticate();
+    }
+
     public function checkBalance()
     {
         $repo = new Shiprocket();
