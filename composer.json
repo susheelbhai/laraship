@@ -1,10 +1,45 @@
 {
     "name": "susheelbhai/laraship",
-    "description": "suppots all types of shipment",
+    "description": "Multi-provider shipping integration for Laravel e-commerce applications",
+    "keywords": [
+        "laravel",
+        "shipping",
+        "courier",
+        "delhivery",
+        "shiprocket",
+        "bluedart",
+        "ecommerce",
+        "logistics"
+    ],
+    "type": "library",
     "license": "MIT",
+    "authors": [
+        {
+            "name": "Susheel Bhai",
+            "email": "susheelbhai@example.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^12.0",
+        "illuminate/support": "^12.0",
+        "illuminate/database": "^12.0",
+        "illuminate/contracts": "^12.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^10.0",
+        "pestphp/pest": "^3.0",
+        "pestphp/pest-plugin-laravel": "^3.0",
+        "laravel/pint": "^1.0"
+    },
     "autoload": {
         "psr-4": {
             "Susheelbhai\\Laraship\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Susheelbhai\\Laraship\\Tests\\": "tests/"
         }
     },
     "extra": {
@@ -13,16 +48,24 @@
                 "Susheelbhai\\Laraship\\LarashipServiceProvider"
             ],
             "aliases": {
-                "Larapay": "Susheelbhai\\Laraship\\Facade"
+                "Laraship": "Susheelbhai\\Laraship\\Facades\\Laraship"
             }
         }
     },
-    "authors": [
-        {
-            "name": "Susheel Kumar Singh",
-            "email": "susheelkrsingh306@gmail.com"
-        }
-    ],
+    "scripts": {
+        "post-install-cmd": [
+            "@php -r \"if (file_exists('artisan')) { echo '\\n\\033[32m✓ Laraship installed successfully!\\033[0m\\n'; echo '\\033[33mRun: php artisan laraship:install\\033[0m\\n\\n'; }\""
+        ],
+        "post-update-cmd": [
+            "@php -r \"if (file_exists('artisan')) { echo '\\n\\033[32m✓ Laraship updated successfully!\\033[0m\\n'; }\""
+        ]
+    },
     "minimum-stability": "dev",
-    "require": {}
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
 }

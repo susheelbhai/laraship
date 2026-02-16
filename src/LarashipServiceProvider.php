@@ -2,39 +2,291 @@
 
 namespace Susheelbhai\Laraship;
 
-use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\ServiceProvider;
-use Susheelbhai\Laraship\Services\LarashipService;
+use Susheelbhai\Laraship\Console\Commands\InstallLarashipCommand;
+use Susheelbhai\Laraship\Services\ShippingManager;
 
 class LarashipServiceProvider extends ServiceProvider
 {
+    /**
+     * Register services.
+     */
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/laraship.php','laraship');
-        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'laraship');
-        $this->app->bind('laraship', function(){
-            return new LarashipService();
+        // Merge package config with application config
+        $this->mergeConfigFrom(
+            __DIR__.'/../config/laraship.php',
+            'laraship'
+        );
+
+        // Register services as singletons
+        $this->app->singleton(\Susheelbhai\Laraship\Services\ShippingProviderFactory::class);
+        $this->app->singleton(\Susheelbhai\Laraship\Services\PackageCalculator::class);
+        $this->app->singleton(\Susheelbhai\Laraship\Services\AddressValidator::class);
+
+        $this->app->singleton(\Susheelbhai\Laraship\Services\RateCalculator::class, function ($app) {
+            return new \Susheelbhai\Laraship\Services\RateCalculator(
+                $app->make(\Susheelbhai\Laraship\Services\ShippingProviderFactory::class),
+                $app->make(\Susheelbhai\Laraship\Services\PackageCalculator::class)
+            );
         });
-        $loader = AliasLoader::getInstance();
-        $loader->alias('Laraship', \Susheelbhai\Laraship\Services\Facades\Laraship::class);
+
+        // Register the main shipping manager as a singleton
+        $this->app->singleton(ShippingManager::class, function ($app) {
+            return new ShippingManager(
+                $app->make(\Susheelbhai\Laraship\Services\ShippingProviderFactory::class),
+                $app->make(\Susheelbhai\Laraship\Services\RateCalculator::class),
+                $app->make(\Susheelbhai\Laraship\Services\PackageCalculator::class),
+                $app->make(\Susheelbhai\Laraship\Services\AddressValidator::class)
+            );
+        });
+
+        // Register the facade accessor
+        $this->app->singleton('laraship', function ($app) {
+            return $app->make(ShippingManager::class);
+        });
     }
 
-    
+    /**
+     * Bootstrap services.
+     */
     public function boot(): void
     {
-        $this->registerPublishable();
+        // Publish configuration file
+        $this->publishes([
+            __DIR__.'/../config/laraship.php' => config_path('laraship.php'),
+        ], 'laraship-config');
+
+        // Publish migrations
+        $this->publishes([
+            __DIR__.'/../database/migrations' => database_path('migrations'),
+        ], 'laraship-migrations');
+
+        // Publish views (optional)
+        $this->publishes([
+            __DIR__.'/../resources/views' => resource_path('views/vendor/laraship'),
+        ], 'laraship-views');
+
+        // Publish controllers with namespace replacement
+        $this->publishes([
+            __DIR__.'/Http/Controllers/ShippingProviderController.php' => app_path('Http/Controllers/Admin/ShippingProviderController.php'),
+            __DIR__.'/Http/Controllers/OrderShipmentController.php' => app_path('Http/Controllers/Admin/OrderShipmentController.php'),
+            __DIR__.'/Http/Controllers/ManualWebhookController.php' => app_path('Http/Controllers/Admin/ManualWebhookController.php'),
+            __DIR__.'/Http/Controllers/UserOrderShipmentController.php' => app_path('Http/Controllers/User/OrderShipmentController.php'),
+        ], 'laraship-controllers');
+
+        // Custom publishing for controllers to replace namespace
+        $this->publishes([
+            __DIR__.'/Http/Requests/ShippingProviderRequest.php' => app_path('Http/Requests/ShippingProviderRequest.php'),
+            __DIR__.'/Http/Requests/ManualWebhookRequest.php' => app_path('Http/Requests/ManualWebhookRequest.php'),
+        ], 'laraship-requests');
+
+        // Publish React components
+        $this->publishes([
+            __DIR__.'/../resources/js/pages' => resource_path('js/pages'),
+            __DIR__.'/../resources/js/components/ShippingSection.tsx' => resource_path('js/components/shipping/ShippingSection.tsx'),
+            __DIR__.'/../resources/js/components/UserShippingSection.tsx' => resource_path('js/components/shipping/UserShippingSection.tsx'),
+        ], 'laraship-components');
+
+        // Publish routes (all routes under single tag)
+        $this->publishes([
+            __DIR__.'/../routes/laraship_admin.php' => base_path('routes/admin/laraship.php'),
+            __DIR__.'/../routes/laraship_webhook.php' => base_path('routes/admin/laraship_webhook.php'),
+            __DIR__.'/../routes/laraship_user.php' => base_path('routes/user/laraship.php'),
+        ], 'laraship-routes');
+
+        // Publish seeders
+        $this->publishes([
+            __DIR__.'/../database/seeders' => database_path('seeders/Laraship'),
+        ], 'laraship-seeders');
+
+        // Publish notifications
+        $this->publishes([
+            __DIR__.'/Notifications' => app_path('Notifications/Laraship'),
+        ], 'laraship-notifications');
+
+        // Load migrations
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+
+        // Load views
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'laraship');
+
+        // Register event listeners
+        $this->registerEventListeners();
+
+        // Register commands
         if ($this->app->runningInConsole()) {
             $this->commands([
-                \Susheelbhai\Laraship\Commands\UpdateENV::class,
+                InstallLarashipCommand::class,
             ]);
+        }
+
+        // Register published event to replace namespaces
+        \Illuminate\Support\Facades\Event::listen(
+            \Illuminate\Console\Events\CommandFinished::class,
+            function ($event) {
+                if ($event->command === 'vendor:publish') {
+                    $this->replaceNamespacesAfterPublishing();
+                }
+            }
+        );
+    }
+
+    /**
+     * Replace namespaces in published files.
+     */
+    protected function replaceNamespacesAfterPublishing(): void
+    {
+        $controllerPath = app_path('Http/Controllers/Admin/ShippingProviderController.php');
+        $orderShipmentControllerPath = app_path('Http/Controllers/Admin/OrderShipmentController.php');
+        $manualWebhookControllerPath = app_path('Http/Controllers/Admin/ManualWebhookController.php');
+        $userOrderShipmentControllerPath = app_path('Http/Controllers/User/OrderShipmentController.php');
+        $requestPath = app_path('Http/Requests/ShippingProviderRequest.php');
+        $manualWebhookRequestPath = app_path('Http/Requests/ManualWebhookRequest.php');
+
+        // Replace controller namespace
+        if (file_exists($controllerPath)) {
+            $content = file_get_contents($controllerPath);
+            $content = str_replace(
+                'namespace Susheelbhai\Laraship\Http\Controllers;',
+                'namespace App\Http\Controllers\Admin;',
+                $content
+            );
+            $content = str_replace(
+                'use Illuminate\Routing\Controller;',
+                'use App\Http\Controllers\Controller;',
+                $content
+            );
+            $content = str_replace(
+                'use Susheelbhai\Laraship\Http\Requests\ShippingProviderRequest;',
+                'use App\Http\Requests\ShippingProviderRequest;',
+                $content
+            );
+            file_put_contents($controllerPath, $content);
+        }
+
+        // Replace OrderShipmentController namespace
+        if (file_exists($orderShipmentControllerPath)) {
+            $content = file_get_contents($orderShipmentControllerPath);
+            $content = str_replace(
+                'namespace Susheelbhai\Laraship\Http\Controllers;',
+                'namespace App\Http\Controllers\Admin;',
+                $content
+            );
+            $content = str_replace(
+                'use Illuminate\Routing\Controller;',
+                'use App\Http\Controllers\Controller;',
+                $content
+            );
+            file_put_contents($orderShipmentControllerPath, $content);
+        }
+
+        // Replace ManualWebhookController namespace
+        if (file_exists($manualWebhookControllerPath)) {
+            $content = file_get_contents($manualWebhookControllerPath);
+            $content = str_replace(
+                'namespace Susheelbhai\Laraship\Http\Controllers;',
+                'namespace App\Http\Controllers\Admin;',
+                $content
+            );
+            $content = str_replace(
+                'use Illuminate\Routing\Controller;',
+                'use App\Http\Controllers\Controller;',
+                $content
+            );
+            $content = str_replace(
+                'use Susheelbhai\Laraship\Http\Requests\ManualWebhookRequest;',
+                'use App\Http\Requests\ManualWebhookRequest;',
+                $content
+            );
+            file_put_contents($manualWebhookControllerPath, $content);
+        }
+
+        // Replace User OrderShipmentController namespace
+        if (file_exists($userOrderShipmentControllerPath)) {
+            $content = file_get_contents($userOrderShipmentControllerPath);
+            $content = str_replace(
+                'namespace Susheelbhai\Laraship\Http\Controllers;',
+                'namespace App\Http\Controllers\User;',
+                $content
+            );
+            $content = str_replace(
+                'use Illuminate\Routing\Controller;',
+                'use App\Http\Controllers\Controller;',
+                $content
+            );
+            $content = str_replace(
+                'class UserOrderShipmentController extends Controller',
+                'class OrderShipmentController extends Controller',
+                $content
+            );
+            file_put_contents($userOrderShipmentControllerPath, $content);
+        }
+
+        // Replace request namespace
+        if (file_exists($requestPath)) {
+            $content = file_get_contents($requestPath);
+            $content = str_replace(
+                'namespace Susheelbhai\Laraship\Http\Requests;',
+                'namespace App\Http\Requests;',
+                $content
+            );
+            file_put_contents($requestPath, $content);
+        }
+
+        // Replace ManualWebhookRequest namespace
+        if (file_exists($manualWebhookRequestPath)) {
+            $content = file_get_contents($manualWebhookRequestPath);
+            $content = str_replace(
+                'namespace Susheelbhai\Laraship\Http\Requests;',
+                'namespace App\Http\Requests;',
+                $content
+            );
+            file_put_contents($manualWebhookRequestPath, $content);
         }
     }
 
-    public function registerPublishable()
+    /**
+     * Register event listeners.
+     */
+    protected function registerEventListeners(): void
     {
-        $this->publishes([
-            __dir__ . "/../config" => config_path('/'),
-        ], 'laraship');
+        $events = $this->app->make(\Illuminate\Contracts\Events\Dispatcher::class);
+
+        // ShipmentStatusUpdated event - only update order status, no notification
+        $events->listen(
+            \Susheelbhai\Laraship\Events\ShipmentStatusUpdated::class,
+            \Susheelbhai\Laraship\Listeners\UpdateOrderStatus::class
+        );
+
+        // ShipmentBooked event listener
+        $events->listen(
+            \Susheelbhai\Laraship\Events\ShipmentBooked::class,
+            \Susheelbhai\Laraship\Listeners\SendShipmentBookedNotification::class
+        );
+
+        // ShipmentPickedUp event listener
+        $events->listen(
+            \Susheelbhai\Laraship\Events\ShipmentPickedUp::class,
+            \Susheelbhai\Laraship\Listeners\SendShipmentPickedUpNotification::class
+        );
+
+        // ShipmentDispatched event listener
+        $events->listen(
+            \Susheelbhai\Laraship\Events\ShipmentDispatched::class,
+            \Susheelbhai\Laraship\Listeners\SendShipmentDispatchedNotification::class
+        );
+
+        // ShipmentOutForDelivery event listener
+        $events->listen(
+            \Susheelbhai\Laraship\Events\ShipmentOutForDelivery::class,
+            \Susheelbhai\Laraship\Listeners\SendShipmentOutForDeliveryNotification::class
+        );
+
+        // ShipmentDelivered event listener
+        $events->listen(
+            \Susheelbhai\Laraship\Events\ShipmentDelivered::class,
+            \Susheelbhai\Laraship\Listeners\SendShipmentDeliveredNotification::class
+        );
     }
 }
