@@ -64,7 +64,7 @@ class ShippingProviderController extends Controller
         $availableAdapters = collect($providers)->map(function ($provider, $key) {
             return [
                 'value' => $provider['adapter'],
-                'label' => $provider['name'],
+                'title' => $provider['name'],
             ];
         })->values()->toArray();
 
@@ -87,14 +87,18 @@ class ShippingProviderController extends Controller
         // Test connection with credentials
         try {
             $testProvider = new $adapterClass(
-                credentials: $request->credentials,
+                credentials: $request->credentials ?? [],
                 config: $request->config ?? []
             );
+            // dd($testProvider);
         } catch (\Exception $e) {
-            throw $e;
+            // Map error to appropriate field based on adapter type
+            $errorField = str_contains($adapterClass, 'ShiprocketAdapter')
+                ? 'credentials_email'
+                : 'credentials_api_key';
 
             return back()
-                ->withErrors(['credentials' => 'Failed to initialize provider: '.$e->getMessage()])
+                ->withErrors([$errorField => 'Failed to initialize provider: '.$e->getMessage()])
                 ->withInput();
         }
 
@@ -103,9 +107,9 @@ class ShippingProviderController extends Controller
                 'name' => $request->name,
                 'display_name' => $request->display_name,
                 'adapter_class' => $request->adapter_class,
-                'credentials' => $request->credentials,
-                'config' => $request->config,
-                'is_enabled' => false,
+                'credentials' => $request->credentials ?? [],
+                'config' => $request->config ?? [],
+                'is_enabled' => true,
                 'priority' => $request->priority ?? 0,
                 'tracking_url_template' => $request->tracking_url_template,
             ]);
@@ -114,8 +118,6 @@ class ShippingProviderController extends Controller
                 ->route('admin.shipping_provider.index')
                 ->with('success', 'Provider created successfully');
         } catch (\Exception $e) {
-            throw $e;
-
             return back()
                 ->withErrors(['error' => 'Failed to create provider: '.$e->getMessage()])
                 ->withInput();
@@ -131,15 +133,20 @@ class ShippingProviderController extends Controller
 
         // Try to get wallet balance
         $walletBalance = null;
+        $supportsRecharge = false;
+        $rechargeUrl = null;
+
         if ($provider->is_enabled) {
             try {
                 $adapter = $this->providerFactory->make($provider->name);
                 $walletBalance = $adapter->getBalance();
-                \Log::info('Wallet balance fetched', ['balance' => $walletBalance]);
+
+                // Get provider config to check if it supports recharge API
+                $providerConfig = $this->getProviderConfig($provider->adapter_class);
+                $supportsRecharge = $providerConfig['supports_recharge_api'] ?? false;
+                $rechargeUrl = $providerConfig['recharge_url'] ?? null;
             } catch (\Exception $e) {
-                \Log::warning("Failed to fetch wallet balance for provider {$provider->id}", [
-                    'error' => $e->getMessage(),
-                ]);
+                throw $e;
             }
         }
 
@@ -154,11 +161,30 @@ class ShippingProviderController extends Controller
             'shipments_count' => $provider->shipments->count(),
             'booking_attempts_count' => $provider->bookingAttempts->count(),
             'wallet_balance' => $walletBalance,
+            'supports_recharge' => $supportsRecharge,
+            'recharge_url' => $rechargeUrl,
             'created_at' => $provider->created_at,
             'updated_at' => $provider->updated_at,
         ];
 
         return $this->render('admin/resources/shipping_provider/show', compact('data'));
+    }
+
+    /**
+     * Get the provider configuration.
+     */
+    private function getProviderConfig(string $adapterClass): array
+    {
+        // Find the provider config by adapter class
+        $providers = config('laraship.providers', []);
+
+        foreach ($providers as $provider) {
+            if (($provider['adapter'] ?? null) === $adapterClass) {
+                return $provider;
+            }
+        }
+
+        return [];
     }
 
     /**
@@ -281,13 +307,6 @@ class ShippingProviderController extends Controller
                 ], 404);
             }
 
-            \Log::info('Wallet recharge initiated', [
-                'provider_id' => $provider->id,
-                'provider_name' => $provider->name,
-                'amount' => $request->amount,
-                'transaction_id' => $result['transaction_id'],
-                'status' => $result['status'],
-            ]);
 
             return response()->json([
                 'success' => true,
@@ -295,11 +314,7 @@ class ShippingProviderController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Wallet recharge failed', [
-                'provider_id' => $provider->id,
-                'error' => $e->getMessage(),
-            ]);
-
+            throw $e;
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to recharge wallet: '.$e->getMessage(),

@@ -8,7 +8,7 @@ use Susheelbhai\Laraship\Facades\Laraship;
 
 class OrderShipmentController extends Controller
 {
-    /**
+     /**
      * Show shipping rates for an order
      */
     public function getRates($orderId)

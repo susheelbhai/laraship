@@ -72,10 +72,6 @@ class ShippingProviderRequest extends FormRequest
     {
         $rules = [
             'display_name' => 'required|string|max:255',
-            'credentials_api_key' => 'nullable|string',
-            'credentials_api_secret' => 'nullable|string',
-            'credentials_email' => 'nullable|email',
-            'credentials_password' => 'nullable|string',
             'config' => 'nullable|array',
             'priority' => 'nullable|integer|min:0',
             'tracking_url_template' => 'nullable|string|max:500',
@@ -87,7 +83,23 @@ class ShippingProviderRequest extends FormRequest
             $rules['adapter_class'] = 'required|string';
         }
 
-        // For update (PUT/PATCH), adapter_class is not required (can't be changed)
+        // Conditional validation based on adapter class
+        $adapterClass = $this->input('adapter_class');
+
+        if ($adapterClass && str_contains($adapterClass, 'ShiprocketAdapter')) {
+            // Shiprocket requires email and password
+            $rules['credentials_email'] = 'required|email';
+            $rules['credentials_password'] = 'required|string';
+            $rules['credentials_api_key'] = 'nullable|string';
+            $rules['credentials_api_secret'] = 'nullable|string';
+        } else {
+            // Other adapters require API key
+            $rules['credentials_api_key'] = 'required|string';
+            $rules['credentials_api_secret'] = 'nullable|string';
+            $rules['credentials_email'] = 'nullable|email';
+            $rules['credentials_password'] = 'nullable|string';
+        }
+
         return $rules;
     }
 
@@ -104,7 +116,9 @@ class ShippingProviderRequest extends FormRequest
             'display_name.required' => 'Display name is required.',
             'adapter_class.required' => 'Please select an adapter class.',
             'credentials_api_key.required' => 'API Key is required.',
+            'credentials_email.required' => 'Email is required.',
             'credentials_email.email' => 'Please provide a valid email address.',
+            'credentials_password.required' => 'Password is required.',
             'priority.integer' => 'Priority must be a number.',
             'priority.min' => 'Priority cannot be negative.',
         ];

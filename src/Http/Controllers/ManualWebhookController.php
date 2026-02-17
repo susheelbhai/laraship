@@ -9,7 +9,7 @@ use Susheelbhai\Laraship\Models\Shipment;
 
 class ManualWebhookController extends Controller
 {
-    /**
+     /**
      * Show the manual webhook form.
      */
     public function create(Request $request)

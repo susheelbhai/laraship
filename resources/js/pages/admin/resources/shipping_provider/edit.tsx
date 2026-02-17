@@ -10,6 +10,8 @@ type FormType = {
     display_name: string;
     credentials_api_key: string;
     credentials_api_secret: string;
+    credentials_email: string;
+    credentials_password: string;
     config: Record<string, string>;
     is_enabled: boolean;
     priority: number;
@@ -18,10 +20,14 @@ type FormType = {
 
 type ProviderData = {
     id: number;
+    name: string;
     display_name: string;
+    adapter_class: string;
     credentials: {
-        api_key: string;
-        api_secret: string;
+        api_key?: string;
+        api_secret?: string;
+        email?: string;
+        password?: string;
     };
     config: Record<string, string>;
     is_enabled: boolean;
@@ -48,6 +54,8 @@ export default function Edit() {
         display_name: provider?.display_name || '',
         credentials_api_key: provider?.credentials?.api_key || '',
         credentials_api_secret: provider?.credentials?.api_secret || '',
+        credentials_email: provider?.credentials?.email || '',
+        credentials_password: provider?.credentials?.password || '',
         config: provider?.config || {},
         is_enabled: provider?.is_enabled ?? false,
         priority: provider?.priority || 0,
@@ -61,6 +69,10 @@ export default function Edit() {
         onSuccess: () => console.log('Shipping provider updated successfully!'),
     });
 
+    // Determine which credential fields to show based on adapter
+    const requiresEmailPassword = provider?.adapter_class?.includes('Shiprocket');
+    const requiresApiKey = !requiresEmailPassword;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Edit Shipping Provider" />
@@ -71,18 +83,40 @@ export default function Edit() {
                     name="display_name"
                     inputDivData={inputDivData}
                 />
-                <InputDiv
-                    type="text"
-                    label="API Key"
-                    name="credentials_api_key"
-                    inputDivData={inputDivData}
-                />
-                <InputDiv
-                    type="text"
-                    label="API Secret (Optional)"
-                    name="credentials_api_secret"
-                    inputDivData={inputDivData}
-                />
+                {requiresApiKey && (
+                    <>
+                        <InputDiv
+                            type="text"
+                            label="API Key"
+                            name="credentials_api_key"
+                            inputDivData={inputDivData}
+                        />
+                        <InputDiv
+                            type="text"
+                            label="API Secret (Optional)"
+                            name="credentials_api_secret"
+                            inputDivData={inputDivData}
+                        />
+                    </>
+                )}
+                {requiresEmailPassword && (
+                    <>
+                        <InputDiv
+                            type="email"
+                            label="Email"
+                            name="credentials_email"
+                            inputDivData={inputDivData}
+                            placeholder="Enter email address"
+                        />
+                        <InputDiv
+                            type="password"
+                            label="Password"
+                            name="credentials_password"
+                            inputDivData={inputDivData}
+                            placeholder="Enter password"
+                        />
+                    </>
+                )}
                 <InputDiv
                     type="number"
                     label="Priority (Lower = Higher Priority)"

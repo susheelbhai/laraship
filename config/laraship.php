@@ -105,106 +105,156 @@ return [
         'delhivery' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\DelhiveryAdapter::class,
             'name' => 'Delhivery',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.delhivery.com/wallet',
         ],
         'shiprocket' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\ShiprocketAdapter::class,
             'name' => 'Shiprocket',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://app.shiprocket.in/',
         ],
         'bluedart' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\BluedartAdapter::class,
             'name' => 'Blue Dart',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.bluedart.com/',
         ],
         'dtdc' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\DtdcAdapter::class,
             'name' => 'DTDC',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.dtdc.com/',
         ],
         'ecom-express' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\EcomExpressAdapter::class,
             'name' => 'Ecom Express',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.ecomexpress.in/',
         ],
         'xpressbees' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\XpressbeesAdapter::class,
             'name' => 'Xpressbees',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.xpressbees.com/',
         ],
         'shadowfax' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\ShadowfaxAdapter::class,
             'name' => 'Shadowfax',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.shadowfax.in/',
         ],
         'ekart' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\EkartAdapter::class,
             'name' => 'Ekart',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://ekartlogistics.com/',
         ],
         'india-post' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\IndiaPostAdapter::class,
             'name' => 'India Post',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.indiapost.gov.in/',
         ],
         'gati' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\GatiAdapter::class,
             'name' => 'Gati',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.gati.com/',
         ],
         'professional-couriers' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\ProfessionalCouriersAdapter::class,
             'name' => 'Professional Couriers',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.tpcindia.com/',
         ],
         'trackon' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\TrackonAdapter::class,
             'name' => 'Trackon',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.trackoncouriers.com/',
         ],
         'tci-express' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\TciExpressAdapter::class,
             'name' => 'TCI Express',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.tciexpress.in/',
         ],
         'vrl-logistics' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\VrlLogisticsAdapter::class,
             'name' => 'VRL Logistics',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.vrllogistics.com/',
         ],
         'dunzo' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\DunzoAdapter::class,
             'name' => 'Dunzo',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.dunzo.com/',
         ],
         'pickrr' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\PickrrAdapter::class,
             'name' => 'Pickrr',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.pickrr.com/',
         ],
         'shyplite' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\ShypliteAdapter::class,
             'name' => 'Shyplite',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.shyplite.com/',
         ],
         'vamaship' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\VamashipAdapter::class,
             'name' => 'Vamaship',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.vamaship.com/',
         ],
         'ithink-logistics' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\IThinkLogisticsAdapter::class,
             'name' => 'iThink Logistics',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.ithinklogistics.com/',
         ],
 
         // International Providers
         'fedex' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\FedexAdapter::class,
             'name' => 'FedEx',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.fedex.com/',
         ],
         'dhl' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\DhlAdapter::class,
             'name' => 'DHL Express',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.dhl.com/',
         ],
         'ups' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\UpsAdapter::class,
             'name' => 'UPS',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.ups.com/',
         ],
         'aramex' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\AramexAdapter::class,
             'name' => 'Aramex',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://www.aramex.com/',
         ],
         'amazon-transport' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\AmazonTransportAdapter::class,
             'name' => 'Amazon Transport',
+            'supports_recharge_api' => false,
+            'recharge_url' => 'https://sell.amazon.in/',
         ],
 
         // Testing
         'mock-provider' => [
             'adapter' => \Susheelbhai\Laraship\Adapters\MockAdapter::class,
             'name' => 'Mock Provider (Testing)',
+            'supports_recharge_api' => true,
+            'recharge_url' => null,
         ],
     ],
 

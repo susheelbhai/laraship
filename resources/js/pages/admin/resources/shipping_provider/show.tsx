@@ -1,12 +1,12 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import axios from 'axios';
 import EditRow from '@/components/table/edit-row';
 import Table from '@/components/table/table';
 import TableCard from '@/components/table/table-card';
 import TBody from '@/components/table/tbody';
 import THead from '@/components/table/thead';
 import AppLayout from '@/layouts/admin/app-layout';
+import RechargeModal from './RechargeModal';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -32,46 +32,28 @@ export default function Show() {
         shipments_count: number;
         booking_attempts_count: number;
         wallet_balance: { balance: number; currency: string; formatted: string } | null;
+        supports_recharge: boolean;
+        recharge_url: string | null;
         created_at: string;
         updated_at: string;
     }) || {};
 
     console.log('Provider data:', provider);
     console.log('Wallet balance:', provider.wallet_balance);
+    console.log('Supports recharge:', provider.supports_recharge);
+    console.log('Recharge URL:', provider.recharge_url);
 
     const [showRechargeModal, setShowRechargeModal] = useState(false);
-    const [rechargeAmount, setRechargeAmount] = useState('');
-    const [processing, setProcessing] = useState(false);
-    const [rechargeResult, setRechargeResult] = useState<any>(null);
-    const [error, setError] = useState<string | null>(null);
 
-    const handleRecharge = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setProcessing(true);
-        setError(null);
-
-        try {
-            const response = await axios.post(
-                route('admin.shipping_provider.recharge', provider.id),
-                { amount: parseFloat(rechargeAmount) }
-            );
-
-            setRechargeResult(response.data.data);
-
-            // If payment URL is provided, redirect
-            if (response.data.data.payment_url) {
-                window.location.href = response.data.data.payment_url;
-            } else {
-                // Close modal after 2 seconds and reload page
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            }
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to recharge wallet');
-        } finally {
-            setProcessing(false);
+    const handleAddMoney = () => {
+        // If provider doesn't support API recharge, redirect to their website directly
+        if (!provider.supports_recharge && provider.recharge_url) {
+            window.open(provider.recharge_url, '_blank');
+            return;
         }
+        
+        // Otherwise show the modal for API recharge
+        setShowRechargeModal(true);
     };
 
     const thead = [
@@ -120,7 +102,7 @@ export default function Show() {
                                             {provider.wallet_balance.formatted}
                                         </span>
                                         <button
-                                            onClick={() => setShowRechargeModal(true)}
+                                            onClick={handleAddMoney}
                                             className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition"
                                         >
                                             Add Money
@@ -159,87 +141,13 @@ export default function Show() {
                 </Table>
             </TableCard>
 
-            {/* Recharge Modal */}
-            {showRechargeModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                        <h3 className="text-lg font-semibold mb-4">Recharge Wallet</h3>
-
-                        {!rechargeResult ? (
-                            <form onSubmit={handleRecharge}>
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Amount ({provider.wallet_balance?.currency || 'INR'})
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="100"
-                                        step="0.01"
-                                        value={rechargeAmount}
-                                        onChange={(e) => setRechargeAmount(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="Enter amount"
-                                        required
-                                        disabled={processing}
-                                    />
-                                    <p className="mt-1 text-xs text-gray-500">Minimum: 100</p>
-                                </div>
-
-                                {error && (
-                                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                                        <p className="text-sm text-red-600">{error}</p>
-                                    </div>
-                                )}
-
-                                <div className="flex gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setShowRechargeModal(false);
-                                            setRechargeAmount('');
-                                            setError(null);
-                                        }}
-                                        className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition"
-                                        disabled={processing}
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50"
-                                        disabled={processing}
-                                    >
-                                        {processing ? 'Processing...' : 'Recharge'}
-                                    </button>
-                                </div>
-                            </form>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                                    <h4 className="font-medium text-green-800 mb-2">Recharge Successful!</h4>
-                                    <dl className="space-y-1 text-sm text-green-700">
-                                        <div className="flex justify-between">
-                                            <dt className="font-medium">Transaction ID:</dt>
-                                            <dd>{rechargeResult.transaction_id}</dd>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <dt className="font-medium">Amount:</dt>
-                                            <dd>{provider.wallet_balance?.currency} {rechargeResult.amount}</dd>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <dt className="font-medium">Status:</dt>
-                                            <dd className="capitalize">{rechargeResult.status}</dd>
-                                        </div>
-                                    </dl>
-                                </div>
-                                <p className="text-sm text-gray-600 text-center">
-                                    Redirecting...
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+            <RechargeModal
+                isOpen={showRechargeModal}
+                onClose={() => setShowRechargeModal(false)}
+                providerId={provider.id}
+                currency={provider.wallet_balance?.currency}
+                rechargeUrl={provider.recharge_url}
+            />
         </AppLayout>
     );
 }
