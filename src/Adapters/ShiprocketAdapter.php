@@ -324,8 +324,64 @@ class ShiprocketAdapter implements ShippingProviderInterface
      */
     public function getBalance(): ?array
     {
-        // Shiprocket doesn't provide a public API for wallet balance
-        return null;
+        try {
+            $response = Http::withToken($this->token)
+                ->get("{$this->baseUrl}/account/details/wallet-balance");
+
+            if ($response->failed()) {
+                return null;
+            }
+
+            $data = $response->json();
+
+            if (isset($data['data']['balance_amount'])) {
+                return [
+                    'balance' => (float) $data['data']['balance_amount'],
+                    'currency' => 'INR',
+                    'formatted' => '₹ '.number_format($data['data']['balance_amount'], 2),
+                ];
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Recharge wallet balance.
+     */
+    public function rechargeWallet(float $amount, array $options = []): ?array
+    {
+        try {
+            $payload = [
+                'amount' => $amount,
+                'payment_method' => $options['payment_method'] ?? 'online',
+            ];
+
+            if (isset($options['transaction_reference'])) {
+                $payload['transaction_reference'] = $options['transaction_reference'];
+            }
+
+            $response = Http::withToken($this->token)
+                ->post("{$this->baseUrl}/account/recharge", $payload);
+
+            if ($response->failed()) {
+                return null;
+            }
+
+            $data = $response->json();
+
+            return [
+                'transaction_id' => $data['data']['transaction_id'] ?? uniqid('txn_'),
+                'amount' => (float) $amount,
+                'status' => $data['data']['status'] ?? 'pending',
+                'payment_url' => $data['data']['payment_url'] ?? null,
+                'raw_response' => $data,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     /**

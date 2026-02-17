@@ -226,6 +226,21 @@ class Order extends Model
 
 ## Usage
 
+### Wallet Management
+
+For detailed information on checking balances and recharging wallets, see [WALLET_MANAGEMENT.md](WALLET_MANAGEMENT.md).
+
+Quick example:
+```php
+$provider = ShippingProviderFactory::make('shiprocket', $credentials);
+
+// Check balance
+$balance = $provider->getBalance();
+
+// Recharge wallet
+$result = $provider->rechargeWallet(1000.00);
+```
+
 ### Admin Panel
 
 1. Navigate to `/admin/shipping_provider` to manage providers
@@ -278,6 +293,117 @@ $tracking = Laraship::trackShipment($shipment);
 
 // Cancel shipment
 Laraship::cancelShipment($shipment);
+```
+
+### Wallet Management
+
+Check wallet balance and recharge for providers that support it (e.g., Shiprocket):
+
+```php
+use Susheelbhai\Laraship\Services\ShippingProviderFactory;
+
+// Get provider instance
+$provider = ShippingProviderFactory::make('shiprocket', [
+    'email' => 'your@email.com',
+    'password' => 'your-password',
+]);
+
+// Check wallet balance
+$balance = $provider->getBalance();
+if ($balance) {
+    echo "Balance: {$balance['formatted']}"; // ₹ 5,000.00
+    echo "Amount: {$balance['balance']}";    // 5000.00
+    echo "Currency: {$balance['currency']}"; // INR
+}
+
+// Recharge wallet
+$recharge = $provider->rechargeWallet(1000.00, [
+    'payment_method' => 'online',
+    'transaction_reference' => 'TXN123456',
+]);
+
+if ($recharge) {
+    echo "Transaction ID: {$recharge['transaction_id']}";
+    echo "Amount: {$recharge['amount']}";
+    echo "Status: {$recharge['status']}";
+    
+    // If payment URL is provided (for online payment)
+    if (isset($recharge['payment_url'])) {
+        return redirect($recharge['payment_url']);
+    }
+}
+```
+
+**Using with ShippingProvider Model:**
+
+```php
+use Susheelbhai\Laraship\Models\ShippingProvider;
+
+$provider = ShippingProvider::find($providerId);
+$adapter = $provider->getAdapter();
+
+// Check balance
+$balance = $adapter->getBalance();
+
+// Recharge wallet
+$recharge = $adapter->rechargeWallet(2500.00);
+```
+
+**Controller Example:**
+
+```php
+use Susheelbhai\Laraship\Models\ShippingProvider;
+use Illuminate\Http\Request;
+
+class WalletController extends Controller
+{
+    public function balance($providerId)
+    {
+        $provider = ShippingProvider::findOrFail($providerId);
+        $adapter = $provider->getAdapter();
+        
+        $balance = $adapter->getBalance();
+        
+        if (!$balance) {
+            return response()->json([
+                'message' => 'Provider does not support balance API'
+            ], 404);
+        }
+        
+        return response()->json($balance);
+    }
+    
+    public function recharge(Request $request, $providerId)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:100',
+            'payment_method' => 'nullable|string',
+        ]);
+        
+        $provider = ShippingProvider::findOrFail($providerId);
+        $adapter = $provider->getAdapter();
+        
+        $result = $adapter->rechargeWallet(
+            $request->amount,
+            $request->only(['payment_method', 'transaction_reference'])
+        );
+        
+        if (!$result) {
+            return response()->json([
+                'message' => 'Provider does not support wallet recharge API'
+            ], 404);
+        }
+        
+        // Log the transaction
+        \Log::info('Wallet recharged', [
+            'provider' => $provider->name,
+            'transaction_id' => $result['transaction_id'],
+            'amount' => $result['amount'],
+        ]);
+        
+        return response()->json($result);
+    }
+}
 ```
 
 ## Events

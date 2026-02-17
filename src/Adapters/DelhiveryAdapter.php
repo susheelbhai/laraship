@@ -316,6 +316,17 @@ class DelhiveryAdapter implements ShippingProviderInterface
     }
 
     /**
+     * Recharge wallet balance.
+     * Delhivery doesn't provide a public API for wallet recharge.
+     */
+    public function rechargeWallet(float $amount, array $options = []): ?array
+    {
+        // Delhivery doesn't have a public API endpoint for wallet recharge
+        // Recharge must be done through their web portal
+        return null;
+    }
+
+    /**
      * Map Delhivery status to standard status.
      */
     private function mapStatus(string $status): string

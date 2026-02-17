@@ -34,6 +34,7 @@ Route::prefix('shipping_provider')->name('shipping_provider.')->group(function (
     Route::delete('/{provider}', [$shippingProviderController, 'destroy'])->name('destroy');
     Route::post('/{provider}/test', [$shippingProviderController, 'testConnection'])->name('test');
     Route::post('/{provider}/toggle', [$shippingProviderController, 'toggle'])->name('toggle');
+    Route::post('/{provider}/recharge', [$shippingProviderController, 'rechargeWallet'])->name('recharge');
 });
 
 // Order Shipping Routes

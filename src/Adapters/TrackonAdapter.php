@@ -213,6 +213,14 @@ class TrackonAdapter implements ShippingProviderInterface
         return null;
     }
 
+    /**
+     * Recharge wallet balance.
+     */
+    public function rechargeWallet(float $amount, array $options = []): ?array
+    {
+        return null;
+    }
+
     private function mapStatus(string $status): string
     {
         return match (strtolower($status)) {

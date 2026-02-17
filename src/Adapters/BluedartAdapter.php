@@ -316,6 +316,14 @@ class BluedartAdapter implements ShippingProviderInterface
     }
 
     /**
+     * Recharge wallet balance.
+     */
+    public function rechargeWallet(float $amount, array $options = []): ?array
+    {
+        return null;
+    }
+
+    /**
      * Map Bluedart status to standard status.
      */
     private function mapStatus(string $status): string

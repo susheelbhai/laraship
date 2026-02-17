@@ -64,7 +64,7 @@ class ShippingProviderController extends Controller
         $availableAdapters = collect($providers)->map(function ($provider, $key) {
             return [
                 'value' => $provider['adapter'],
-                'label' => $provider['name'],
+                'title' => $provider['name'],
             ];
         })->values()->toArray();
 
@@ -129,6 +129,17 @@ class ShippingProviderController extends Controller
     {
         $provider->load(['shipments', 'bookingAttempts']);
 
+        // Try to get wallet balance
+        $walletBalance = null;
+        try {
+            $adapter = $provider->getAdapter();
+            $walletBalance = $adapter->getBalance();
+        } catch (\Exception $e) {
+            \Log::warning("Failed to fetch wallet balance for provider {$provider->id}", [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         $data = [
             'id' => $provider->id,
             'name' => $provider->name,
@@ -139,6 +150,7 @@ class ShippingProviderController extends Controller
             'tracking_url_template' => $provider->tracking_url_template,
             'shipments_count' => $provider->shipments->count(),
             'booking_attempts_count' => $provider->bookingAttempts->count(),
+            'wallet_balance' => $walletBalance,
             'created_at' => $provider->created_at,
             'updated_at' => $provider->updated_at,
         ];
@@ -239,5 +251,56 @@ class ShippingProviderController extends Controller
         ]);
 
         return back()->with('success', 'Provider status updated');
+    }
+
+    /**
+     * Recharge wallet for the provider.
+     */
+    public function rechargeWallet(\Illuminate\Http\Request $request, ShippingProvider $provider)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:100|max:100000',
+            'payment_method' => 'nullable|string',
+            'transaction_reference' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $adapter = $provider->getAdapter();
+            $result = $adapter->rechargeWallet(
+                $request->amount,
+                $request->only(['payment_method', 'transaction_reference'])
+            );
+
+            if (! $result) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This provider does not support wallet recharge',
+                ], 404);
+            }
+
+            \Log::info('Wallet recharge initiated', [
+                'provider_id' => $provider->id,
+                'provider_name' => $provider->name,
+                'amount' => $request->amount,
+                'transaction_id' => $result['transaction_id'],
+                'status' => $result['status'],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $result,
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Wallet recharge failed', [
+                'provider_id' => $provider->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to recharge wallet: '.$e->getMessage(),
+            ], 500);
+        }
     }
 }

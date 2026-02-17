@@ -41,6 +41,25 @@ class MockAdapter implements ShippingProviderInterface
         return [
             'balance' => 5000.00,
             'currency' => 'INR',
+            'formatted' => '₹ 5,000.00',
+        ];
+    }
+
+    /**
+     * Recharge wallet balance.
+     */
+    public function rechargeWallet(float $amount, array $options = []): ?array
+    {
+        // Mock provider returns a fake recharge response
+        return [
+            'transaction_id' => 'mock_txn_'.uniqid(),
+            'amount' => $amount,
+            'status' => 'success',
+            'payment_url' => null,
+            'raw_response' => [
+                'message' => 'Mock recharge successful',
+                'timestamp' => now()->toIso8601String(),
+            ],
         ];
     }
 

@@ -70,4 +70,14 @@ interface ShippingProviderInterface
      * @return array{balance: float, currency: string}|null
      */
     public function getBalance(): ?array;
+
+    /**
+     * Recharge wallet balance with provider.
+     * Returns null if provider doesn't support recharge API.
+     *
+     * @param  float  $amount  Amount to recharge
+     * @param  array  $options  Additional options (payment_method, etc.)
+     * @return array{transaction_id: string, amount: float, status: string}|null
+     */
+    public function rechargeWallet(float $amount, array $options = []): ?array;
 }
