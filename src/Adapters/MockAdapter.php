@@ -46,6 +46,15 @@ class MockAdapter implements ShippingProviderInterface
     }
 
     /**
+     * Check if connection to provider is valid.
+     */
+    public function checkConnection(): bool
+    {
+        // Mock provider always returns true for testing
+        return true;
+    }
+
+    /**
      * Recharge wallet balance.
      */
     public function rechargeWallet(float $amount, array $options = []): ?array

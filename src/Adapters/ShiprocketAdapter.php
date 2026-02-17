@@ -25,7 +25,7 @@ class ShiprocketAdapter implements ShippingProviderInterface
         private array $config = []
     ) {
         if (empty($credentials['email']) || empty($credentials['password'])) {
-            throw new ProviderAuthenticationFailedException('Shiprocket email and password are required');
+            throw new ProviderAuthenticationFailedException('Email and password are required for Shiprocket authentication. Please provide both credentials.');
         }
 
         $this->authenticate();
@@ -43,17 +43,19 @@ class ShiprocketAdapter implements ShippingProviderInterface
             ]);
 
             if ($response->failed()) {
-                throw new ProviderAuthenticationFailedException('Shiprocket authentication failed');
+                throw new ProviderAuthenticationFailedException('Authentication failed due to incorrect credentials. Please check your email and password and try again.');
             }
 
             $data = $response->json();
             $this->token = $data['token'] ?? null;
 
             if (! $this->token) {
-                throw new ProviderAuthenticationFailedException('No token received from Shiprocket');
+                throw new ProviderAuthenticationFailedException('Authentication successful but no token received. Please contact Shiprocket support.');
             }
+        } catch (ProviderAuthenticationFailedException $e) {
+            throw $e;
         } catch (\Exception $e) {
-            throw new ProviderAuthenticationFailedException('Shiprocket authentication failed: '.$e->getMessage());
+            throw new ProviderAuthenticationFailedException('Unable to connect to Shiprocket. Please check your internet connection and try again.');
         }
     }
 
@@ -345,6 +347,22 @@ class ShiprocketAdapter implements ShippingProviderInterface
             return null;
         } catch (\Exception $e) {
             return null;
+        }
+    }
+
+    /**
+     * Check if connection to provider is valid.
+     */
+    public function checkConnection(): bool
+    {
+        try {
+            // Shiprocket doesn't have a dedicated connection check endpoint
+            // Use getBalance as a way to verify credentials
+            $balance = $this->getBalance();
+
+            return $balance !== null;
+        } catch (\Exception $e) {
+            return false;
         }
     }
 

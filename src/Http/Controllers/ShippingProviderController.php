@@ -84,21 +84,35 @@ class ShippingProviderController extends Controller
                 ->withInput();
         }
 
-        // Test connection with credentials
+        // Determine which field to show error on based on adapter type
+        $errorField = 'credentials_api_key'; // Default
+
+        if (str_contains($adapterClass, 'ShiprocketAdapter')) {
+            $errorField = 'credentials_email';
+        } elseif (str_contains($adapterClass, 'EcomExpressAdapter')) {
+            $errorField = 'credentials_username';
+        } elseif (str_contains($adapterClass, 'BluedartAdapter')) {
+            $errorField = 'credentials_license_key';
+        }
+
+        // Test connection with credentials before saving
         try {
-            $testProvider = new $adapterClass(
+            $testAdapter = new $adapterClass(
                 credentials: $request->credentials ?? [],
                 config: $request->config ?? []
             );
-            // dd($testProvider);
-        } catch (\Exception $e) {
-            // Map error to appropriate field based on adapter type
-            $errorField = str_contains($adapterClass, 'ShiprocketAdapter')
-                ? 'credentials_email'
-                : 'credentials_api_key';
 
+            // Check if credentials are valid
+            $isConnected = $testAdapter->checkConnection();
+
+            if (! $isConnected) {
+                return back()
+                    ->withErrors([$errorField => 'Invalid credentials: Unable to connect to provider. Please verify your credentials.'])
+                    ->withInput();
+            }
+        } catch (\Exception $e) {
             return back()
-                ->withErrors([$errorField => 'Failed to initialize provider: '.$e->getMessage()])
+                ->withErrors([$errorField => $e->getMessage()])
                 ->withInput();
         }
 
@@ -116,7 +130,7 @@ class ShippingProviderController extends Controller
 
             return redirect()
                 ->route('admin.shipping_provider.index')
-                ->with('success', 'Provider created successfully');
+                ->with('success', 'Provider created successfully with valid credentials');
         } catch (\Exception $e) {
             return back()
                 ->withErrors(['error' => 'Failed to create provider: '.$e->getMessage()])
@@ -212,6 +226,40 @@ class ShippingProviderController extends Controller
      */
     public function update(ShippingProviderRequest $request, ShippingProvider $provider)
     {
+        // Determine which field to show error on based on adapter type
+        $errorField = 'credentials_api_key'; // Default
+
+        if (str_contains($provider->adapter_class, 'ShiprocketAdapter')) {
+            $errorField = 'credentials_email';
+        } elseif (str_contains($provider->adapter_class, 'EcomExpressAdapter')) {
+            $errorField = 'credentials_username';
+        } elseif (str_contains($provider->adapter_class, 'BluedartAdapter')) {
+            $errorField = 'credentials_license_key';
+        }
+
+        // If credentials are being updated, validate them first
+        if ($request->has('credentials')) {
+            try {
+                $testAdapter = new ($provider->adapter_class)(
+                    credentials: $request->credentials ?? [],
+                    config: $request->config ?? $provider->config
+                );
+
+                // Check if credentials are valid
+                $isConnected = $testAdapter->checkConnection();
+
+                if (! $isConnected) {
+                    return back()
+                        ->withErrors([$errorField => 'Invalid credentials: Unable to connect to provider. Please verify your credentials.'])
+                        ->withInput();
+                }
+            } catch (\Exception $e) {
+                return back()
+                    ->withErrors([$errorField => $e->getMessage()])
+                    ->withInput();
+            }
+        }
+
         $provider->update($request->only([
             'display_name',
             'credentials',
@@ -251,19 +299,13 @@ class ShippingProviderController extends Controller
         try {
             $adapter = $this->providerFactory->make($provider->name);
 
-            $testAddress = new \Susheelbhai\Laraship\DTOs\Address(
-                name: 'Test',
-                phone: '9999999999',
-                line1: 'Test Address',
-                line2: null,
-                city: 'Test City',
-                state: 'Test State',
-                pincode: '110001'
-            );
+            $isConnected = $adapter->checkConnection();
 
-            $result = $adapter->validateAddress($testAddress);
+            if ($isConnected) {
+                return back()->with('success', 'Connection successful! Credentials are valid.');
+            }
 
-            return back()->with('success', 'Connection successful');
+            return back()->withErrors(['connection' => 'Connection failed: Unable to verify credentials with provider.']);
 
         } catch (\Exception $e) {
             return back()->withErrors(['connection' => 'Connection failed: '.$e->getMessage()]);
@@ -307,7 +349,6 @@ class ShippingProviderController extends Controller
                 ], 404);
             }
 
-
             return response()->json([
                 'success' => true,
                 'data' => $result,
@@ -315,6 +356,7 @@ class ShippingProviderController extends Controller
 
         } catch (\Exception $e) {
             throw $e;
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to recharge wallet: '.$e->getMessage(),

@@ -23,13 +23,20 @@ export default function Index() {
 
     const thead = [
         { title: 'Name', className: 'p-3' },
-        { title: 'Display Name', className: 'p-3' },
+        { title: 'Adapter', className: 'p-3' },
         { title: 'Priority', className: 'p-3' },
         { title: 'Balance', className: 'p-3' },
         { title: 'Shipments', className: 'p-3' },
         { title: 'Status', className: 'p-3' },
         { title: 'View', className: 'p-3' },
     ];
+
+    // Extract adapter name from class path
+    const getAdapterName = (adapterClass: string) => {
+        // Extract class name from full path (e.g., "Susheelbhai\Laraship\Adapters\BluedartAdapter" -> "Bluedart")
+        const className = adapterClass.split('\\').pop() || '';
+        return className.replace('Adapter', '');
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -43,7 +50,7 @@ export default function Index() {
                         {items.map((provider: any) => (
                             <tr key={provider.id} className="border-t border-gray-200">
                                 <td className="p-3">{provider.name}</td>
-                                <td className="p-3">{provider.display_name}</td>
+                                <td className="p-3">{getAdapterName(provider.adapter_class)}</td>
                                 <td className="p-3">{provider.priority}</td>
                                 <td className="p-3">
                                     {provider.balance ? (

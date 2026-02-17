@@ -262,6 +262,39 @@ class EcomExpressAdapter implements ShippingProviderInterface
     }
 
     /**
+     * Check if connection to provider is valid.
+     */
+    public function checkConnection(): bool
+    {
+        try {
+            // Use rate calculator to verify credentials
+            $response = Http::post("{$this->baseUrl}/services/rate_calculator", [
+                'username' => $this->username,
+                'password' => $this->password,
+                'origin_pincode' => '110001',
+                'destination_pincode' => '110002',
+                'weight' => 1,
+                'payment_mode' => 'PPD',
+            ]);
+
+            // Check for authentication errors
+            if ($response->status() === 401 || $response->status() === 403) {
+                return false;
+            }
+
+            // Only return true if successful
+            if ($response->successful()) {
+                return true;
+            }
+
+            // For any other response, fail safe
+            return false;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
      * Recharge wallet balance.
      */
     public function rechargeWallet(float $amount, array $options = []): ?array

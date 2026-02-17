@@ -33,7 +33,7 @@ class ModelModifier
         // Add trait to class - find existing use statement and add to it
         $content = preg_replace(
             '/(use\s+[^;]+);(\s*)(\/\/|protected|public|private|\})/m',
-            "$1, HasShippingDimensions;$2$3",
+            '$1, HasShippingDimensions;$2$3',
             $content,
             1
         );
@@ -68,7 +68,7 @@ class ModelModifier
         // Add trait to class - find existing use statement and add to it
         $content = preg_replace(
             '/(use\s+[^;]+);(\s*)(\/\/|protected|public|private|\})/m',
-            "$1, HasShipment;$2$3",
+            '$1, HasShipment;$2$3',
             $content,
             1
         );

@@ -316,6 +316,50 @@ class BluedartAdapter implements ShippingProviderInterface
     }
 
     /**
+     * Check if connection to provider is valid.
+     */
+    public function checkConnection(): bool
+    {
+        try {
+            // Use pincode serviceability check to verify credentials
+            $response = Http::post("{$this->baseUrl}/rest/v1/PincodeAvailability", [
+                'LicenseKey' => $this->licenseKey,
+                'Pincode' => '110001', // Test with Delhi pincode
+            ]);
+
+            // Check for authentication errors
+            if ($response->status() === 401 || $response->status() === 403) {
+                return false;
+            }
+
+            // Only return true if successful
+            if ($response->successful()) {
+                return true;
+            }
+
+            // For any other status code, check the response body
+            $body = $response->json();
+
+            // Check for authentication/authorization errors in response
+            if (isset($body['error'])) {
+                $errorLower = strtolower($body['error']);
+                if (str_contains($errorLower, 'unauthorized') ||
+                    str_contains($errorLower, 'invalid') ||
+                    str_contains($errorLower, 'authentication') ||
+                    str_contains($errorLower, 'license')) {
+                    return false;
+                }
+            }
+
+            // If we got a non-successful response without clear auth error, fail safe
+            return false;
+        } catch (\Exception $e) {
+            // Any exception means connection failed
+            return false;
+        }
+    }
+
+    /**
      * Recharge wallet balance.
      */
     public function rechargeWallet(float $amount, array $options = []): ?array

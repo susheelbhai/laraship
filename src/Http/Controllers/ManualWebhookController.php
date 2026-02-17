@@ -1,15 +1,15 @@
 <?php
 
-namespace Susheelbhai\Laraship\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\ManualWebhookRequest;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
-use Susheelbhai\Laraship\Http\Requests\ManualWebhookRequest;
 use Susheelbhai\Laraship\Models\Shipment;
 
 class ManualWebhookController extends Controller
 {
-     /**
+    /**
      * Show the manual webhook form.
      */
     public function create(Request $request)

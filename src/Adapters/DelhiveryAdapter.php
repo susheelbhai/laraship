@@ -27,7 +27,7 @@ class DelhiveryAdapter implements ShippingProviderInterface
         $this->apiKey = $credentials['api_key'] ?? '';
 
         if (empty($this->apiKey)) {
-            throw new ProviderAuthenticationFailedException('Delhivery API key is required');
+            throw new ProviderAuthenticationFailedException('API key is required for Delhivery authentication. Please provide your API key.');
         }
     }
 
@@ -313,6 +313,41 @@ class DelhiveryAdapter implements ShippingProviderInterface
         // Delhivery doesn't have a public API endpoint for wallet balance
         // Balance must be checked through their web portal
         return null;
+    }
+
+    /**
+     * Check if connection to provider is valid.
+     */
+    public function checkConnection(): bool
+    {
+        try {
+            // Use rates API with minimal parameters to verify credentials
+            $response = Http::withHeaders([
+                'Authorization' => "Token {$this->apiKey}",
+            ])->get("{$this->baseUrl}/kinko/v1/invoice/charges", [
+                'md' => 'S',
+                'ss' => 'Delivered',
+                'cgm' => 1,
+                'd_pin' => '110001',
+                'o_pin' => '110002',
+                'cod' => 0,
+            ]);
+
+            // Check for authentication errors
+            if ($response->status() === 401 || $response->status() === 403) {
+                return false;
+            }
+
+            // Only return true if successful
+            if ($response->successful()) {
+                return true;
+            }
+
+            // For any other response, fail safe
+            return false;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**

@@ -225,6 +225,20 @@ class DunzoAdapter implements ShippingProviderInterface
     }
 
     /**
+     * Check if connection to provider is valid.
+     */
+    public function checkConnection(): bool
+    {
+        try {
+            $balance = $this->getBalance();
+
+            return $balance !== null;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
      * Recharge wallet balance.
      */
     public function rechargeWallet(float $amount, array $options = []): ?array

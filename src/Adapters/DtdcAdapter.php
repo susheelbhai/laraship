@@ -295,6 +295,39 @@ class DtdcAdapter implements ShippingProviderInterface
     }
 
     /**
+     * Check if connection to provider is valid.
+     */
+    public function checkConnection(): bool
+    {
+        try {
+            // Use rate calculator with minimal parameters to verify credentials
+            $response = Http::withHeaders([
+                'API-KEY' => $this->apiKey,
+            ])->post("{$this->baseUrl}/rest/v2/rate-calculator", [
+                'origin_pincode' => '110001',
+                'destination_pincode' => '110002',
+                'weight' => 1,
+                'customer_code' => $this->customerId,
+            ]);
+
+            // Check for authentication errors
+            if ($response->status() === 401 || $response->status() === 403) {
+                return false;
+            }
+
+            // Only return true if successful
+            if ($response->successful()) {
+                return true;
+            }
+
+            // For any other response, fail safe
+            return false;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
      * Recharge wallet balance.
      */
     public function rechargeWallet(float $amount, array $options = []): ?array

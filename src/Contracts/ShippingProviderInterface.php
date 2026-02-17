@@ -72,6 +72,14 @@ interface ShippingProviderInterface
     public function getBalance(): ?array;
 
     /**
+     * Check if connection to provider is valid.
+     * Uses provider's connection check API if available, otherwise falls back to getBalance.
+     *
+     * @return bool True if credentials are valid and connection is successful
+     */
+    public function checkConnection(): bool;
+
+    /**
      * Recharge wallet balance with provider.
      * Returns null if provider doesn't support recharge API.
      *

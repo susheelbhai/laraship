@@ -22,20 +22,36 @@ class ShippingProviderRequest extends FormRequest
         // Convert flat credentials fields to nested array
         $credentials = [];
 
-        // Handle API key/secret (Delhivery, etc.)
+        // Handle API key/secret (Delhivery, FedEx, DHL, etc.)
         if ($this->filled('credentials_api_key')) {
             $credentials['api_key'] = $this->credentials_api_key;
         }
-        if ($this->filled('credentials_api_secret')) {
-            $credentials['api_secret'] = $this->credentials_api_secret;
+
+        if ($this->filled('credentials_secret_key')) {
+            $credentials['secret_key'] = $this->credentials_secret_key;
         }
 
-        // Handle email/password (Shiprocket, etc.)
+        // Handle email/password (Shiprocket)
         if ($this->filled('credentials_email')) {
             $credentials['email'] = $this->credentials_email;
         }
+
         if ($this->filled('credentials_password')) {
             $credentials['password'] = $this->credentials_password;
+        }
+
+        // Handle username/password (EcomExpress)
+        if ($this->filled('credentials_username')) {
+            $credentials['username'] = $this->credentials_username;
+        }
+
+        // Handle license_key/login_id (Bluedart)
+        if ($this->filled('credentials_license_key')) {
+            $credentials['license_key'] = $this->credentials_license_key;
+        }
+
+        if ($this->filled('credentials_login_id')) {
+            $credentials['login_id'] = $this->credentials_login_id;
         }
 
         if (! empty($credentials)) {
@@ -90,14 +106,21 @@ class ShippingProviderRequest extends FormRequest
             // Shiprocket requires email and password
             $rules['credentials_email'] = 'required|email';
             $rules['credentials_password'] = 'required|string';
-            $rules['credentials_api_key'] = 'nullable|string';
-            $rules['credentials_api_secret'] = 'nullable|string';
-        } else {
-            // Other adapters require API key
+        } elseif ($adapterClass && str_contains($adapterClass, 'EcomExpressAdapter')) {
+            // EcomExpress requires username and password
+            $rules['credentials_username'] = 'required|string';
+            $rules['credentials_password'] = 'required|string';
+        } elseif ($adapterClass && str_contains($adapterClass, 'BluedartAdapter')) {
+            // Bluedart requires license_key and login_id
+            $rules['credentials_license_key'] = 'required|string';
+            $rules['credentials_login_id'] = 'required|string';
+        } elseif ($adapterClass && (str_contains($adapterClass, 'FedexAdapter') || str_contains($adapterClass, 'DhlAdapter'))) {
+            // FedEx and DHL require api_key and secret_key
             $rules['credentials_api_key'] = 'required|string';
-            $rules['credentials_api_secret'] = 'nullable|string';
-            $rules['credentials_email'] = 'nullable|email';
-            $rules['credentials_password'] = 'nullable|string';
+            $rules['credentials_secret_key'] = 'required|string';
+        } else {
+            // Default: Most adapters require just api_key
+            $rules['credentials_api_key'] = 'required|string';
         }
 
         return $rules;
@@ -116,9 +139,13 @@ class ShippingProviderRequest extends FormRequest
             'display_name.required' => 'Display name is required.',
             'adapter_class.required' => 'Please select an adapter class.',
             'credentials_api_key.required' => 'API Key is required.',
+            'credentials_secret_key.required' => 'Secret Key is required.',
             'credentials_email.required' => 'Email is required.',
             'credentials_email.email' => 'Please provide a valid email address.',
             'credentials_password.required' => 'Password is required.',
+            'credentials_username.required' => 'Username is required.',
+            'credentials_license_key.required' => 'License Key is required.',
+            'credentials_login_id.required' => 'Login ID is required.',
             'priority.integer' => 'Priority must be a number.',
             'priority.min' => 'Priority cannot be negative.',
         ];

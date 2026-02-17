@@ -117,12 +117,12 @@ class InstallLarashipCommand extends Command
         $content = str_replace('use Illuminate\Routing\Controller;', 'use App\Http\Controllers\Controller;', $content);
         $content = str_replace('use Susheelbhai\Laraship\Http\Requests\ShippingProviderRequest;', 'use App\Http\Requests\ShippingProviderRequest;', $content);
         $content = str_replace('use Susheelbhai\Laraship\Http\Requests\ManualWebhookRequest;', 'use App\Http\Requests\ManualWebhookRequest;', $content);
-        
+
         // Fix class name for User OrderShipmentController
         if (str_contains($path, 'User/OrderShipmentController.php')) {
             $content = str_replace('class UserOrderShipmentController extends Controller', 'class OrderShipmentController extends Controller', $content);
         }
-        
+
         File::put($path, $content);
     }
 
@@ -214,6 +214,7 @@ class InstallLarashipCommand extends Command
             // Skip if marked to skip
             if (isset($config['skip']) && $config['skip']) {
                 $this->line("  ⊘ Skipped {$name} (already configured in project)");
+
                 continue;
             }
 
@@ -224,24 +225,24 @@ class InstallLarashipCommand extends Command
                     $relativePath = str_replace(base_path().'/', '', $config['path']);
                     $this->line("  ✓ {$name} modified");
                     $this->comment("    → {$relativePath}");
-                    
+
                     // Show component usage instructions for Order Show Pages
                     if ($name === 'Admin Order Show Page') {
                         $this->newLine();
-                        $this->info("    📋 Manual Step Required:");
-                        $this->line("    Add this component where you want to display shipping information:");
-                        $this->comment("    <ShippingSection orderId={order.id} shipment={order.shipment} />");
+                        $this->info('    📋 Manual Step Required:');
+                        $this->line('    Add this component where you want to display shipping information:');
+                        $this->comment('    <ShippingSection orderId={order.id} shipment={order.shipment} />');
                         $this->newLine();
                     } elseif ($name === 'User Order Show Page') {
                         $this->newLine();
-                        $this->info("    📋 Manual Step Required:");
-                        $this->line("    Add this component where you want to display shipping information:");
-                        $this->comment("    <UserShippingSection orderId={order.id} shipment={order.shipment} />");
+                        $this->info('    📋 Manual Step Required:');
+                        $this->line('    Add this component where you want to display shipping information:');
+                        $this->comment('    <UserShippingSection orderId={order.id} shipment={order.shipment} />');
                         $this->newLine();
                     }
                 } catch (\Exception $e) {
                     if ($e->getMessage() === 'Already integrated') {
-                        $this->warn("    Already integrated");
+                        $this->warn('    Already integrated');
                     } else {
                         $this->errors[] = "{$name}: {$e->getMessage()}";
                         $this->error("  ✗ Failed to modify {$name}: {$e->getMessage()}");

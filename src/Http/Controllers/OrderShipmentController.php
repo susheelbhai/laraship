@@ -1,14 +1,14 @@
 <?php
 
-namespace Susheelbhai\Laraship\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use Susheelbhai\Laraship\Facades\Laraship;
 
 class OrderShipmentController extends Controller
 {
-     /**
+    /**
      * Show shipping rates for an order
      */
     public function getRates($orderId)

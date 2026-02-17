@@ -1,12 +1,12 @@
 <?php
 
-namespace Susheelbhai\Laraship\Http\Controllers;
+namespace App\Http\Controllers\User;
 
-use Illuminate\Routing\Controller;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Susheelbhai\Laraship\Facades\Laraship;
 
-class UserOrderShipmentController extends Controller
+class OrderShipmentController extends Controller
 {
     /**
      * Get tracking information for user's order
