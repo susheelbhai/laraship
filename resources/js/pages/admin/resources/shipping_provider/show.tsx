@@ -36,6 +36,9 @@ export default function Show() {
         updated_at: string;
     }) || {};
 
+    console.log('Provider data:', provider);
+    console.log('Wallet balance:', provider.wallet_balance);
+
     const [showRechargeModal, setShowRechargeModal] = useState(false);
     const [rechargeAmount, setRechargeAmount] = useState('');
     const [processing, setProcessing] = useState(false);

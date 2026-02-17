@@ -1,6 +1,6 @@
 <?php
 
-namespace Susheelbhai\Laraship\Http\Requests;
+namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -20,15 +20,25 @@ class ShippingProviderRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Convert flat credentials fields to nested array
-        if ($this->has('credentials_api_key')) {
-            $credentials = [];
-            if ($this->filled('credentials_api_key')) {
-                $credentials['api_key'] = $this->credentials_api_key;
-            }
-            if ($this->filled('credentials_api_secret')) {
-                $credentials['api_secret'] = $this->credentials_api_secret;
-            }
+        $credentials = [];
 
+        // Handle API key/secret (Delhivery, etc.)
+        if ($this->filled('credentials_api_key')) {
+            $credentials['api_key'] = $this->credentials_api_key;
+        }
+        if ($this->filled('credentials_api_secret')) {
+            $credentials['api_secret'] = $this->credentials_api_secret;
+        }
+
+        // Handle email/password (Shiprocket, etc.)
+        if ($this->filled('credentials_email')) {
+            $credentials['email'] = $this->credentials_email;
+        }
+        if ($this->filled('credentials_password')) {
+            $credentials['password'] = $this->credentials_password;
+        }
+
+        if (! empty($credentials)) {
             $this->merge(['credentials' => $credentials]);
         }
 
@@ -62,8 +72,10 @@ class ShippingProviderRequest extends FormRequest
     {
         $rules = [
             'display_name' => 'required|string|max:255',
-            'credentials_api_key' => 'required|string',
+            'credentials_api_key' => 'nullable|string',
             'credentials_api_secret' => 'nullable|string',
+            'credentials_email' => 'nullable|email',
+            'credentials_password' => 'nullable|string',
             'config' => 'nullable|array',
             'priority' => 'nullable|integer|min:0',
             'tracking_url_template' => 'nullable|string|max:500',
@@ -92,6 +104,7 @@ class ShippingProviderRequest extends FormRequest
             'display_name.required' => 'Display name is required.',
             'adapter_class.required' => 'Please select an adapter class.',
             'credentials_api_key.required' => 'API Key is required.',
+            'credentials_email.email' => 'Please provide a valid email address.',
             'priority.integer' => 'Priority must be a number.',
             'priority.min' => 'Priority cannot be negative.',
         ];

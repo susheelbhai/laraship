@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Susheelbhai\Laraship\Http\Requests\ShippingProviderRequest;
+use App\Http\Requests\ShippingProviderRequest;
 use Susheelbhai\Laraship\Models\ShippingProvider;
 use Susheelbhai\Laraship\Services\ShippingProviderFactory;
 
@@ -64,7 +64,7 @@ class ShippingProviderController extends Controller
         $availableAdapters = collect($providers)->map(function ($provider, $key) {
             return [
                 'value' => $provider['adapter'],
-                'title' => $provider['name'],
+                'label' => $provider['name'],
             ];
         })->values()->toArray();
 
@@ -131,13 +131,16 @@ class ShippingProviderController extends Controller
 
         // Try to get wallet balance
         $walletBalance = null;
-        try {
-            $adapter = $provider->getAdapter();
-            $walletBalance = $adapter->getBalance();
-        } catch (\Exception $e) {
-            \Log::warning("Failed to fetch wallet balance for provider {$provider->id}", [
-                'error' => $e->getMessage(),
-            ]);
+        if ($provider->is_enabled) {
+            try {
+                $adapter = $this->providerFactory->make($provider->name);
+                $walletBalance = $adapter->getBalance();
+                \Log::info('Wallet balance fetched', ['balance' => $walletBalance]);
+            } catch (\Exception $e) {
+                \Log::warning("Failed to fetch wallet balance for provider {$provider->id}", [
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         $data = [
@@ -265,7 +268,7 @@ class ShippingProviderController extends Controller
         ]);
 
         try {
-            $adapter = $provider->getAdapter();
+            $adapter = $this->providerFactory->make($provider->name);
             $result = $adapter->rechargeWallet(
                 $request->amount,
                 $request->only(['payment_method', 'transaction_reference'])
