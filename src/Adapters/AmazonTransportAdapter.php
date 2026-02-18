@@ -283,4 +283,40 @@ class AmazonTransportAdapter implements ShippingProviderInterface
         // Simplified - in production, implement proper AWS Signature V4
         return base64_encode($this->accessKey.':'.$this->secretKey);
     }
+
+    /**
+     * Get pickup addresses (warehouses) from provider.
+     * This provider does not support fetching pickup addresses via API.
+     */
+    public function getPickupAddresses(): array
+    {
+        return [];
+    }
+
+    /**
+     * Create a new pickup address (warehouse) with provider.
+     * This provider does not support creating pickup addresses via API.
+     */
+    public function createPickupAddress(array $data): ?array
+    {
+        return null;
+    }
+
+    /**
+     * Update an existing pickup address (warehouse) with provider.
+     * This provider does not support updating pickup addresses via API.
+     */
+    public function updatePickupAddress(mixed $id, array $data): ?array
+    {
+        return null;
+    }
+
+    /**
+     * Delete a pickup address (warehouse) from provider.
+     * This provider does not support deleting pickup addresses via API.
+     */
+    public function deletePickupAddress(mixed $id): bool
+    {
+        return false;
+    }
 }

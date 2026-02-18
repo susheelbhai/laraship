@@ -82,4 +82,25 @@ class ShippingProvider extends Model
     {
         return $query->orderBy('priority');
     }
+
+    /**
+     * Get the provider pickup addresses for this provider.
+     */
+    public function providerPickupAddresses(): HasMany
+    {
+        return $this->hasMany(ShipmentProviderPickupAddress::class);
+    }
+
+    /**
+     * Get the pickup addresses linked to this provider.
+     */
+    public function pickupAddresses()
+    {
+        return $this->belongsToMany(
+            PickupAddress::class,
+            'shipment_provider_pickup_addresses',
+            'shipping_provider_id',
+            'pickup_address_id'
+        )->withPivot('provider_address_id')->withTimestamps();
+    }
 }

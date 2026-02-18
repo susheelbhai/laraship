@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ShippingProviderRequest;
+use Susheelbhai\Laraship\Models\PickupAddress;
+use Susheelbhai\Laraship\Models\ShipmentProviderPickupAddress;
 use Susheelbhai\Laraship\Models\ShippingProvider;
 use Susheelbhai\Laraship\Services\ShippingProviderFactory;
 
@@ -360,6 +362,262 @@ class ShippingProviderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to recharge wallet: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Fetch pickup addresses from the provider's API.
+     */
+    public function fetchPickupAddresses(ShippingProvider $provider)
+    {
+        try {
+            $adapter = $this->providerFactory->make($provider->name);
+
+            $addresses = $adapter->getPickupAddresses();
+
+            // If empty array, provider doesn't support this feature
+            if (empty($addresses)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This provider does not support fetching pickup addresses via API',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $addresses,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch pickup addresses: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get available pickup addresses from database for linking.
+     */
+    public function getAvailablePickupAddresses(ShippingProvider $provider)
+    {
+        // Get all active pickup addresses
+        $allAddresses = PickupAddress::where('is_active', true)->get();
+
+        // Get already linked addresses
+        $linkedIds = ShipmentProviderPickupAddress::where('shipping_provider_id', $provider->id)
+            ->pluck('pickup_address_id')
+            ->toArray();
+
+        // Filter out already linked addresses
+        $availableAddresses = $allAddresses->filter(function ($address) use ($linkedIds) {
+            return ! in_array($address->id, $linkedIds);
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $availableAddresses,
+        ]);
+    }
+
+    /**
+     * Get linked pickup addresses for a provider.
+     */
+    public function getLinkedPickupAddresses(ShippingProvider $provider)
+    {
+        $linkedAddresses = $provider->pickupAddresses()
+            ->where('is_active', true)
+            ->get()
+            ->map(function ($address) {
+                return [
+                    'id' => $address->id,
+                    'name' => $address->name,
+                    'phone' => $address->phone,
+                    'email' => $address->email,
+                    'full_address' => $address->full_address,
+                    'provider_address_id' => $address->pivot->provider_address_id,
+                    'is_default' => $address->is_default,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $linkedAddresses,
+        ]);
+    }
+
+    /**
+     * Create a new pickup address with the provider's API.
+     */
+    public function createPickupAddress(ShippingProvider $provider, \Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'pickup_address_id' => 'required|exists:pickup_addresses,id',
+        ]);
+
+        try {
+            $pickupAddress = PickupAddress::findOrFail($request->pickup_address_id);
+
+            // Check if already linked
+            $existing = ShipmentProviderPickupAddress::where('shipping_provider_id', $provider->id)
+                ->where('pickup_address_id', $pickupAddress->id)
+                ->first();
+
+            if ($existing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This pickup address is already linked to this provider',
+                ], 422);
+            }
+
+            $adapter = $this->providerFactory->make($provider->name);
+
+            // Prepare address data for provider API
+            $addressData = [
+                'name' => $pickupAddress->name,
+                'phone' => $pickupAddress->phone,
+                'email' => $pickupAddress->email,
+                'address_line1' => $pickupAddress->address_line1,
+                'address_line2' => $pickupAddress->address_line2,
+                'city' => $pickupAddress->city,
+                'state' => $pickupAddress->state,
+                'pincode' => $pickupAddress->pincode,
+                'country' => $pickupAddress->country,
+            ];
+
+            $address = $adapter->createPickupAddress($addressData);
+
+            // If null, provider doesn't support this feature
+            if ($address === null) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This provider does not support creating pickup addresses via API',
+                ], 404);
+            }
+
+            // Extract the provider address ID
+            $providerAddressId = $address['id'] ?? $address['address_id'] ?? $address['pickup_id'] ?? null;
+
+            if (! $providerAddressId) {
+                // Address might have been created but we couldn't get the ID
+                // Log this for debugging
+                \Log::warning('Pickup address created but no ID returned', [
+                    'provider' => $provider->name,
+                    'pickup_address_id' => $pickupAddress->id,
+                    'response' => $address,
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Address may have been created in provider system, but we could not retrieve its ID. Please refresh and check if it appears in the list.',
+                ], 500);
+            }
+
+            // Store the link between database address and provider address
+            ShipmentProviderPickupAddress::create([
+                'shipping_provider_id' => $provider->id,
+                'pickup_address_id' => $pickupAddress->id,
+                'provider_address_id' => $providerAddressId,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pickup address linked successfully',
+                'data' => $address,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create pickup address: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Update an existing pickup address with the provider's API.
+     */
+    public function updatePickupAddress(ShippingProvider $provider, \Illuminate\Http\Request $request, $addressId)
+    {
+        try {
+            $adapter = $this->providerFactory->make($provider->name);
+
+            $address = $adapter->updatePickupAddress($addressId, $request->all());
+
+            // If null, provider doesn't support this feature
+            if ($address === null) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This provider does not support updating pickup addresses via API',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pickup address updated successfully',
+                'data' => $address,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update pickup address: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a pickup address from the provider's API.
+     */
+    public function deletePickupAddress(ShippingProvider $provider, $addressId)
+    {
+        try {
+            \Log::info('Delete pickup address called', [
+                'provider_id' => $provider->id,
+                'provider_name' => $provider->name,
+                'address_id' => $addressId,
+                'address_id_type' => gettype($addressId),
+            ]);
+
+            $adapter = $this->providerFactory->make($provider->name);
+
+            // Delete from provider API
+            $deleted = $adapter->deletePickupAddress($addressId);
+
+            \Log::info('Delete result', ['deleted' => $deleted]);
+
+            // If false, provider doesn't support this feature
+            if (! $deleted) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This provider does not support deleting pickup addresses via API or address not found',
+                ], 404);
+            }
+
+            // Try to find and remove the link from database if it exists
+            $link = ShipmentProviderPickupAddress::where('shipping_provider_id', $provider->id)
+                ->where('provider_address_id', $addressId)
+                ->first();
+
+            if ($link) {
+                $link->delete();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pickup address deleted successfully',
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Delete pickup address error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete pickup address: '.$e->getMessage(),
             ], 500);
         }
     }

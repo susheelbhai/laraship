@@ -73,12 +73,14 @@ class LarashipServiceProvider extends ServiceProvider
             __DIR__.'/Http/Controllers/OrderShipmentController.php' => app_path('Http/Controllers/Admin/OrderShipmentController.php'),
             __DIR__.'/Http/Controllers/ManualWebhookController.php' => app_path('Http/Controllers/Admin/ManualWebhookController.php'),
             __DIR__.'/Http/Controllers/UserOrderShipmentController.php' => app_path('Http/Controllers/User/OrderShipmentController.php'),
+            __DIR__.'/Http/Controllers/PickupAddressController.php' => app_path('Http/Controllers/Admin/PickupAddressController.php'),
         ], 'laraship-controllers');
 
         // Custom publishing for controllers to replace namespace
         $this->publishes([
             __DIR__.'/Http/Requests/ShippingProviderRequest.php' => app_path('Http/Requests/ShippingProviderRequest.php'),
             __DIR__.'/Http/Requests/ManualWebhookRequest.php' => app_path('Http/Requests/ManualWebhookRequest.php'),
+            __DIR__.'/Http/Requests/PickupAddressRequest.php' => app_path('Http/Requests/PickupAddressRequest.php'),
         ], 'laraship-requests');
 
         // Publish React components

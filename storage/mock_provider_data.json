@@ -1,0 +1,40 @@
+{
+    "balance": 5200,
+    "currency": "INR",
+    "pickup_addresses": [
+        {
+            "id": "MOCK_WH_69954C07396DC",
+            "name": "Bangalore Hub",
+            "phone": "9876543212",
+            "email": "bangalore@example.com",
+            "address": "789 Tech Park",
+            "address_line1": "789 Tech Park",
+            "address_line2": "Whitefield",
+            "city": "Bangalore",
+            "state": "Karnataka",
+            "pincode": "560066",
+            "country": "India",
+            "is_active": true,
+            "company_name": null,
+            "gstin": null
+        },
+        {
+            "id": "MOCK_WH_69954F2C63DC0",
+            "name": "Anjana Bharti",
+            "phone": "+919315531574",
+            "email": "anjanabharti305@gmail.com",
+            "address": "Opposite To Government Polytechnic College Supaul",
+            "address_line1": "Opposite To Government Polytechnic College Supaul",
+            "address_line2": null,
+            "city": "Karjain",
+            "state": "Bihar",
+            "pincode": "852215",
+            "country": "India",
+            "is_active": true,
+            "company_name": "DIGAMITE PRIVATE LIMITED",
+            "gstin": null,
+            "contact_name": "Anjana Bharti",
+            "pin_code": "852215"
+        }
+    ]
+}

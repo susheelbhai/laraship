@@ -5,6 +5,7 @@ A comprehensive Laravel package for integrating multiple shipping providers with
 ## Features
 
 - 25 shipping provider adapters (Indian and International)
+- Pickup address management per provider (API-based, no .env required)
 - Rate calculation and comparison
 - Automated shipment booking
 - Real-time tracking

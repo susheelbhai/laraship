@@ -13,6 +13,7 @@ class LarashipSeeder extends Seeder
     {
         $this->call([
             ShippingProviderSeeder::class,
+            PickupAddressSeeder::class,
             ShipmentSeeder::class,
             ShipmentStatusHistorySeeder::class,
             BookingAttemptSeeder::class,

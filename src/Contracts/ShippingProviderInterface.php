@@ -88,4 +88,40 @@ interface ShippingProviderInterface
      * @return array{transaction_id: string, amount: float, status: string}|null
      */
     public function rechargeWallet(float $amount, array $options = []): ?array;
+
+    /**
+     * Get pickup addresses (warehouses) from provider.
+     * Returns empty array if provider doesn't support this feature.
+     *
+     * @return array<array{id: mixed, name: string, phone: string, email: string|null, address: string, city: string, state: string, pincode: string, country: string}>
+     */
+    public function getPickupAddresses(): array;
+
+    /**
+     * Create a new pickup address (warehouse) with provider.
+     * Returns null if provider doesn't support this feature.
+     *
+     * @param  array  $data  Pickup address data (name, phone, email, address, city, state, pincode, country, etc.)
+     * @return array{id: mixed, name: string, phone: string, email: string|null, address: string, city: string, state: string, pincode: string, country: string}|null
+     */
+    public function createPickupAddress(array $data): ?array;
+
+    /**
+     * Update an existing pickup address (warehouse) with provider.
+     * Returns null if provider doesn't support this feature.
+     *
+     * @param  mixed  $id  Provider's pickup address ID
+     * @param  array  $data  Updated pickup address data
+     * @return array{id: mixed, name: string, phone: string, email: string|null, address: string, city: string, state: string, pincode: string, country: string}|null
+     */
+    public function updatePickupAddress(mixed $id, array $data): ?array;
+
+    /**
+     * Delete a pickup address (warehouse) from provider.
+     * Returns false if provider doesn't support this feature.
+     *
+     * @param  mixed  $id  Provider's pickup address ID
+     * @return bool True if deleted successfully, false otherwise
+     */
+    public function deletePickupAddress(mixed $id): bool;
 }

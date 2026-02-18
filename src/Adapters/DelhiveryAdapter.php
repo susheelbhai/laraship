@@ -362,6 +362,108 @@ class DelhiveryAdapter implements ShippingProviderInterface
     }
 
     /**
+     * Get pickup addresses (warehouses) from Delhivery.
+     * Based on: https://one.delhivery.com/developer-portal/document/b2c/detail/warehouse-creation
+     */
+    public function getPickupAddresses(): array
+    {
+        try {
+            // Delhivery warehouse list API endpoint
+            // Note: This endpoint may require specific permissions on the API key
+            $response = Http::withHeaders([
+                'Authorization' => "Token {$this->apiKey}",
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])->get('https://track.delhivery.com/api/backend/clientwarehouse/all/');
+
+            // Check if response is HTML (authentication/permission issue)
+            $contentType = $response->header('Content-Type');
+            if (str_contains($contentType, 'text/html')) {
+                throw new ShippingException('Delhivery warehouse API returned HTML. This may indicate: 1) Invalid API key, 2) API key lacks warehouse management permissions, or 3) Incorrect endpoint. Please verify your API key has warehouse access enabled.');
+            }
+
+            if ($response->failed()) {
+                throw new ShippingException('Failed to fetch pickup addresses from Delhivery (Status: '.$response->status().'): '.$response->body());
+            }
+
+            $data = $response->json();
+
+            // Check if response is valid JSON
+            if (! is_array($data)) {
+                throw new ShippingException('Invalid response format from Delhivery warehouse API. Expected JSON array, got: '.gettype($data));
+            }
+
+            // Transform Delhivery warehouse data to standard format
+            $addresses = [];
+
+            // Delhivery may return data in different formats
+            $warehouses = $data['data'] ?? $data;
+
+            if (is_array($warehouses)) {
+                foreach ($warehouses as $warehouse) {
+                    // Skip if not an array
+                    if (! is_array($warehouse)) {
+                        continue;
+                    }
+
+                    $addresses[] = [
+                        'id' => $warehouse['id'] ?? $warehouse['wh_code'] ?? null,
+                        'name' => $warehouse['name'] ?? $warehouse['wh_name'] ?? 'N/A',
+                        'phone' => $warehouse['phone'] ?? $warehouse['contact_no'] ?? 'N/A',
+                        'email' => $warehouse['email'] ?? null,
+                        'address' => $warehouse['address'] ?? $warehouse['add'] ?? 'N/A',
+                        'address_line1' => $warehouse['address'] ?? $warehouse['add'] ?? 'N/A',
+                        'city' => $warehouse['city'] ?? 'N/A',
+                        'state' => $warehouse['state'] ?? 'N/A',
+                        'pincode' => $warehouse['pin'] ?? $warehouse['pincode'] ?? $warehouse['pin_code'] ?? 'N/A',
+                        'country' => $warehouse['country'] ?? 'India',
+                        'is_active' => $warehouse['is_active'] ?? $warehouse['status'] ?? true,
+                        'registered_name' => $warehouse['registered_name'] ?? null,
+                    ];
+                }
+            }
+
+            return $addresses;
+
+        } catch (\Exception $e) {
+            throw new ShippingException('Delhivery pickup addresses fetch failed: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Create a new pickup address (warehouse) with Delhivery.
+     * Delhivery doesn't provide a public API for creating warehouses.
+     */
+    public function createPickupAddress(array $data): ?array
+    {
+        // Delhivery doesn't have a public API endpoint for creating warehouses
+        // Warehouses must be created through their web portal
+        return null;
+    }
+
+    /**
+     * Update an existing pickup address (warehouse) with Delhivery.
+     * Delhivery doesn't provide a public API for updating warehouses.
+     */
+    public function updatePickupAddress(mixed $id, array $data): ?array
+    {
+        // Delhivery doesn't have a public API endpoint for updating warehouses
+        // Warehouses must be updated through their web portal
+        return null;
+    }
+
+    /**
+     * Delete a pickup address (warehouse) from Delhivery.
+     * Delhivery doesn't provide a public API for deleting warehouses.
+     */
+    public function deletePickupAddress(mixed $id): bool
+    {
+        // Delhivery doesn't have a public API endpoint for deleting warehouses
+        // Warehouses must be deleted through their web portal
+        return false;
+    }
+
+    /**
      * Map Delhivery status to standard status.
      */
     private function mapStatus(string $status): string

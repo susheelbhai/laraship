@@ -417,4 +417,261 @@ class ShiprocketAdapter implements ShippingProviderInterface
             default => 'pending',
         };
     }
+
+    /**
+     * Get pickup addresses (warehouses) from Shiprocket.
+     * Based on: https://apidocs.shiprocket.in/#6949d954-d0ba-4749-99aa-2435ab7aaf4f
+     */
+    public function getPickupAddresses(): array
+    {
+        try {
+            // Shiprocket pickup locations endpoint
+            $response = Http::withToken($this->token)
+                ->get("{$this->baseUrl}/settings/company/pickup");
+
+            if ($response->failed()) {
+                throw new ShippingException('Failed to fetch pickup addresses from Shiprocket (Status: '.$response->status().'): '.$response->body());
+            }
+
+            $data = $response->json();
+
+            // Check if response contains data
+            if (! isset($data['data']) || ! is_array($data['data'])) {
+                throw new ShippingException('Invalid response format from Shiprocket pickup API. Expected data array.');
+            }
+
+            // Transform Shiprocket pickup location data to standard format
+            $addresses = [];
+
+            foreach ($data['data']['shipping_address'] ?? [] as $location) {
+                $addresses[] = [
+                    'id' => $location['id'] ?? null,
+                    'name' => $location['pickup_location'] ?? 'N/A',
+                    'phone' => $location['phone'] ?? $location['phone_number'] ?? 'N/A',
+                    'email' => $location['email'] ?? null,
+                    'address' => $location['address'] ?? 'N/A',
+                    'address_line1' => $location['address'] ?? 'N/A',
+                    'address_line2' => $location['address_2'] ?? null,
+                    'city' => $location['city'] ?? 'N/A',
+                    'state' => $location['state'] ?? 'N/A',
+                    'pincode' => $location['pin_code'] ?? $location['pincode'] ?? 'N/A',
+                    'country' => $location['country'] ?? 'India',
+                    'is_active' => true,
+                    'company_name' => $location['company_name'] ?? null,
+                    'gstin' => $location['gstin'] ?? null,
+                ];
+            }
+
+            return $addresses;
+
+        } catch (\Exception $e) {
+            throw new ShippingException('Shiprocket pickup addresses fetch failed: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Create a new pickup address (warehouse) with Shiprocket.
+     * Based on: https://apidocs.shiprocket.in/#6949d954-d0ba-4749-99aa-2435ab7aaf4f
+     */
+    public function createPickupAddress(array $data): ?array
+    {
+        try {
+            // Prepare payload for Shiprocket API
+            $payload = [
+                'pickup_location' => $data['name'] ?? $data['pickup_location'] ?? '',
+                'name' => $data['contact_name'] ?? $data['name'] ?? '',
+                'email' => $data['email'] ?? '',
+                'phone' => $data['phone'] ?? '',
+                'address' => $data['address'] ?? $data['address_line1'] ?? '',
+                'address_2' => $data['address_2'] ?? $data['address_line2'] ?? '',
+                'city' => $data['city'] ?? '',
+                'state' => $data['state'] ?? '',
+                'country' => $data['country'] ?? 'India',
+                'pin_code' => $data['pincode'] ?? $data['pin_code'] ?? '',
+            ];
+
+            // Add optional fields if provided
+            if (isset($data['company_name'])) {
+                $payload['company_name'] = $data['company_name'];
+            }
+
+            if (isset($data['gstin'])) {
+                $payload['gstin'] = $data['gstin'];
+            }
+
+            if (isset($data['vendor_name'])) {
+                $payload['vendor_name'] = $data['vendor_name'];
+            }
+
+            // Create pickup location via Shiprocket API
+            $response = Http::withToken($this->token)
+                ->post("{$this->baseUrl}/settings/company/addpickup", $payload);
+
+            if ($response->failed()) {
+                throw new ShippingException('Failed to create pickup address in Shiprocket (Status: '.$response->status().'): '.$response->body());
+            }
+
+            $responseData = $response->json();
+
+            // Log the response for debugging
+            \Log::info('Shiprocket create pickup response', ['response' => $responseData]);
+
+            // Shiprocket typically returns: {"address_id": 123, "success": true, "message": "..."}
+            // or {"data": {"id": 123, ...}}
+            // Extract the ID from various possible locations
+            $addressId = null;
+
+            if (isset($responseData['address_id'])) {
+                $addressId = $responseData['address_id'];
+            } elseif (isset($responseData['data']['id'])) {
+                $addressId = $responseData['data']['id'];
+            } elseif (isset($responseData['pickup_id'])) {
+                $addressId = $responseData['pickup_id'];
+            } elseif (isset($responseData['id'])) {
+                $addressId = $responseData['id'];
+            }
+
+            // Check if creation was successful
+            if (! $addressId) {
+                throw new ShippingException('Pickup address creation failed. No ID returned from Shiprocket. Response: '.json_encode($responseData));
+            }
+
+            // Return created address in standard format
+            return [
+                'id' => $addressId,
+                'name' => $payload['pickup_location'],
+                'phone' => $payload['phone'],
+                'email' => $payload['email'],
+                'address' => $payload['address'],
+                'address_line1' => $payload['address'],
+                'address_line2' => $payload['address_2'],
+                'city' => $payload['city'],
+                'state' => $payload['state'],
+                'pincode' => $payload['pin_code'],
+                'country' => $payload['country'],
+                'is_active' => true,
+                'company_name' => $payload['company_name'] ?? null,
+                'gstin' => $payload['gstin'] ?? null,
+            ];
+
+        } catch (\Exception $e) {
+            throw new ShippingException('Shiprocket pickup address creation failed: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Update an existing pickup address (warehouse) with Shiprocket.
+     * Based on: https://apidocs.shiprocket.in/#6949d954-d0ba-4749-99aa-2435ab7aaf4f
+     */
+    public function updatePickupAddress(mixed $id, array $data): ?array
+    {
+        try {
+            // Prepare payload for Shiprocket API
+            $payload = [
+                'pickup_id' => $id,
+            ];
+
+            // Add fields to update
+            if (isset($data['name']) || isset($data['pickup_location'])) {
+                $payload['pickup_location'] = $data['name'] ?? $data['pickup_location'];
+            }
+
+            if (isset($data['contact_name']) || isset($data['name'])) {
+                $payload['name'] = $data['contact_name'] ?? $data['name'];
+            }
+
+            if (isset($data['email'])) {
+                $payload['email'] = $data['email'];
+            }
+
+            if (isset($data['phone'])) {
+                $payload['phone'] = $data['phone'];
+            }
+
+            if (isset($data['address']) || isset($data['address_line1'])) {
+                $payload['address'] = $data['address'] ?? $data['address_line1'];
+            }
+
+            if (isset($data['address_2']) || isset($data['address_line2'])) {
+                $payload['address_2'] = $data['address_2'] ?? $data['address_line2'];
+            }
+
+            if (isset($data['city'])) {
+                $payload['city'] = $data['city'];
+            }
+
+            if (isset($data['state'])) {
+                $payload['state'] = $data['state'];
+            }
+
+            if (isset($data['country'])) {
+                $payload['country'] = $data['country'];
+            }
+
+            if (isset($data['pincode']) || isset($data['pin_code'])) {
+                $payload['pin_code'] = $data['pincode'] ?? $data['pin_code'];
+            }
+
+            if (isset($data['company_name'])) {
+                $payload['company_name'] = $data['company_name'];
+            }
+
+            if (isset($data['gstin'])) {
+                $payload['gstin'] = $data['gstin'];
+            }
+
+            // Update pickup location via Shiprocket API
+            $response = Http::withToken($this->token)
+                ->post("{$this->baseUrl}/settings/company/pickup/edit", $payload);
+
+            if ($response->failed()) {
+                throw new ShippingException('Failed to update pickup address in Shiprocket (Status: '.$response->status().'): '.$response->body());
+            }
+
+            $responseData = $response->json();
+
+            // Return updated address in standard format
+            return [
+                'id' => $id,
+                'name' => $payload['pickup_location'] ?? 'N/A',
+                'phone' => $payload['phone'] ?? 'N/A',
+                'email' => $payload['email'] ?? null,
+                'address' => $payload['address'] ?? 'N/A',
+                'address_line1' => $payload['address'] ?? 'N/A',
+                'address_line2' => $payload['address_2'] ?? null,
+                'city' => $payload['city'] ?? 'N/A',
+                'state' => $payload['state'] ?? 'N/A',
+                'pincode' => $payload['pin_code'] ?? 'N/A',
+                'country' => $payload['country'] ?? 'India',
+                'is_active' => true,
+                'company_name' => $payload['company_name'] ?? null,
+                'gstin' => $payload['gstin'] ?? null,
+            ];
+
+        } catch (\Exception $e) {
+            throw new ShippingException('Shiprocket pickup address update failed: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a pickup address (warehouse) from Shiprocket.
+     * Based on: https://apidocs.shiprocket.in/#6949d954-d0ba-4749-99aa-2435ab7aaf4f
+     */
+    public function deletePickupAddress(mixed $id): bool
+    {
+        try {
+            // Delete pickup location via Shiprocket API
+            $response = Http::withToken($this->token)
+                ->delete("{$this->baseUrl}/settings/company/pickup/{$id}");
+
+            if ($response->failed()) {
+                throw new ShippingException('Failed to delete pickup address from Shiprocket (Status: '.$response->status().'): '.$response->body());
+            }
+
+            return true;
+
+        } catch (\Exception $e) {
+            throw new ShippingException('Shiprocket pickup address deletion failed: '.$e->getMessage());
+        }
+    }
 }
