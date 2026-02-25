@@ -20,7 +20,7 @@ use Susheelbhai\Laraship\Http\Controllers\WebhookController;
 */
 
 // Webhook Routes - Public (no auth middleware)
-Route::middleware(['web', 'throttle:'.config('laraship.webhook.rate_limit', 60)])
+Route::middleware(['web', 'throttle:' . config('laraship.webhook.rate_limit', 60)])
     ->prefix('webhook/shipping')
     ->name('laraship.webhook.')
     ->group(function () {

@@ -109,25 +109,40 @@ class FrontendModifier
 
         $hasPackageImport = str_contains($importSection, 'Package');
         $hasWebhookImport = str_contains($importSection, 'Webhook');
+        $hasWarehouseImport = str_contains($importSection, 'Warehouse');
         $hasMenu = str_contains($content, 'admin.shipping_provider.index');
 
         // If everything is already there, skip
-        if ($hasPackageImport && $hasWebhookImport && $hasMenu) {
+        if ($hasPackageImport && $hasWebhookImport && $hasWarehouseImport && $hasMenu) {
             throw new \Exception('Already integrated');
         }
 
         $modified = false;
 
         // Add imports if missing (even if menu exists)
-        if (! $hasPackageImport || ! $hasWebhookImport) {
+        if (! $hasPackageImport || ! $hasWebhookImport || ! $hasWarehouseImport) {
             // Find the last import before "} from "lucide-react"" and add our imports
             // Look for "Workflow," which is typically the last import
-            $content = preg_replace(
-                '/(    Workflow,)\s*\n(\} from "lucide-react";)/s',
-                "$1\n    Package,\n    Webhook,\n$2",
-                $content
-            );
-            $modified = true;
+            $importsToAdd = [];
+            if (! $hasPackageImport) {
+                $importsToAdd[] = '    Package,';
+            }
+            if (! $hasWarehouseImport) {
+                $importsToAdd[] = '    Warehouse,';
+            }
+            if (! $hasWebhookImport) {
+                $importsToAdd[] = '    Webhook,';
+            }
+            
+            if (! empty($importsToAdd)) {
+                $importString = implode("\n", $importsToAdd);
+                $content = preg_replace(
+                    '/(    Workflow,)(\s*)(\} from ["\']lucide-react["\'];)/s',
+                    "$1\n{$importString}$2$3",
+                    $content
+                );
+                $modified = true;
+            }
         }
 
         // Add menu item if missing
@@ -140,6 +155,11 @@ class FrontendModifier
                 "                title: \"Providers\",\n".
                 "                routeName: \"admin.shipping_provider.index\",\n".
                 "                icon: Package,\n".
+                "            },\n".
+                "            {\n".
+                "                title: \"Pickup Addresses\",\n".
+                "                routeName: \"admin.pickup_address.index\",\n".
+                "                icon: Warehouse,\n".
                 "            },\n".
                 "            {\n".
                 "                title: \"Manual Webhook\",\n".

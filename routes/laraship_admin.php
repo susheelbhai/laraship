@@ -1,6 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\ManualWebhookController;
+use App\Http\Controllers\Admin\OrderShipmentController;
+use App\Http\Controllers\Admin\PickupAddressController;
+use App\Http\Controllers\Admin\ShippingProviderController;
 
 /*
 |--------------------------------------------------------------------------
@@ -8,73 +12,54 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | These routes should be published to routes/admin/laraship.php
-| They will automatically use the app controller when published.
+| They use the published controllers from app/Http/Controllers/Admin
 |
 */
 
-// Use app controller if published, otherwise use package controller
-$appShippingProviderControllerPath = app_path('Http/Controllers/Admin/ShippingProviderController.php');
-$shippingProviderController = file_exists($appShippingProviderControllerPath)
-    ? \App\Http\Controllers\Admin\ShippingProviderController::class
-    : \Susheelbhai\Laraship\Http\Controllers\ShippingProviderController::class;
-
-$appOrderShipmentControllerPath = app_path('Http/Controllers/Admin/OrderShipmentController.php');
-$orderShipmentController = file_exists($appOrderShipmentControllerPath)
-    ? \App\Http\Controllers\Admin\OrderShipmentController::class
-    : \Susheelbhai\Laraship\Http\Controllers\OrderShipmentController::class;
-
 // Shipping Provider Management
-Route::prefix('shipping_provider')->name('shipping_provider.')->group(function () use ($shippingProviderController) {
-    Route::get('/', [$shippingProviderController, 'index'])->name('index');
-    Route::get('/create', [$shippingProviderController, 'create'])->name('create');
-    Route::post('/', [$shippingProviderController, 'store'])->name('store');
-    Route::get('/{provider}', [$shippingProviderController, 'show'])->name('show');
-    Route::get('/{provider}/edit', [$shippingProviderController, 'edit'])->name('edit');
-    Route::put('/{provider}', [$shippingProviderController, 'update'])->name('update');
-    Route::delete('/{provider}', [$shippingProviderController, 'destroy'])->name('destroy');
-    Route::post('/{provider}/test', [$shippingProviderController, 'testConnection'])->name('test');
-    Route::post('/{provider}/toggle', [$shippingProviderController, 'toggle'])->name('toggle');
-    Route::post('/{provider}/recharge', [$shippingProviderController, 'rechargeWallet'])->name('recharge');
-    Route::get('/{provider}/fetch-pickup-addresses', [$shippingProviderController, 'fetchPickupAddresses'])->name('fetch_pickup_addresses');
-    Route::get('/{provider}/available-pickup-addresses', [$shippingProviderController, 'getAvailablePickupAddresses'])->name('available_pickup_addresses');
-    Route::get('/{provider}/linked-pickup-addresses', [$shippingProviderController, 'getLinkedPickupAddresses'])->name('linked_pickup_addresses');
-    Route::post('/{provider}/pickup-addresses', [$shippingProviderController, 'createPickupAddress'])->name('create_pickup_address');
-    Route::put('/{provider}/pickup-addresses/{addressId}', [$shippingProviderController, 'updatePickupAddress'])->name('update_pickup_address');
-    Route::delete('/{provider}/pickup-addresses/{addressId}', [$shippingProviderController, 'deletePickupAddress'])->name('delete_pickup_address');
+Route::prefix('shipping_provider')->name('shipping_provider.')->group(function () {
+    Route::get('/', [ShippingProviderController::class, 'index'])->name('index');
+    Route::get('/create', [ShippingProviderController::class, 'create'])->name('create');
+    Route::post('/', [ShippingProviderController::class, 'store'])->name('store');
+    Route::get('/{provider}', [ShippingProviderController::class, 'show'])->name('show');
+    Route::get('/{provider}/edit', [ShippingProviderController::class, 'edit'])->name('edit');
+    Route::put('/{provider}', [ShippingProviderController::class, 'update'])->name('update');
+    Route::delete('/{provider}', [ShippingProviderController::class, 'destroy'])->name('destroy');
+    Route::post('/{provider}/test', [ShippingProviderController::class, 'testConnection'])->name('test');
+    Route::post('/{provider}/toggle', [ShippingProviderController::class, 'toggle'])->name('toggle');
+    Route::post('/{provider}/recharge', [ShippingProviderController::class, 'rechargeWallet'])->name('recharge');
+    Route::get('/{provider}/fetch-pickup-addresses', [ShippingProviderController::class, 'fetchPickupAddresses'])->name('fetch_pickup_addresses');
+    Route::get('/{provider}/available-pickup-addresses', [ShippingProviderController::class, 'getAvailablePickupAddresses'])->name('available_pickup_addresses');
+    Route::get('/{provider}/linked-pickup-addresses', [ShippingProviderController::class, 'getLinkedPickupAddresses'])->name('linked_pickup_addresses');
+    Route::post('/{provider}/pickup-addresses', [ShippingProviderController::class, 'createPickupAddress'])->name('create_pickup_address');
+    Route::put('/{provider}/pickup-addresses/{addressId}', [ShippingProviderController::class, 'updatePickupAddress'])->name('update_pickup_address');
+    Route::delete('/{provider}/pickup-addresses/{addressId}', [ShippingProviderController::class, 'deletePickupAddress'])->name('delete_pickup_address');
 });
 
 // Pickup Address Management
-$appPickupAddressControllerPath = app_path('Http/Controllers/Admin/PickupAddressController.php');
-$pickupAddressController = file_exists($appPickupAddressControllerPath)
-    ? \App\Http\Controllers\Admin\PickupAddressController::class
-    : \Susheelbhai\Laraship\Http\Controllers\PickupAddressController::class;
-
-Route::prefix('pickup_address')->name('pickup_address.')->group(function () use ($pickupAddressController) {
-    Route::get('/', [$pickupAddressController, 'index'])->name('index');
-    Route::get('/create', [$pickupAddressController, 'create'])->name('create');
-    Route::post('/', [$pickupAddressController, 'store'])->name('store');
-    Route::get('/{address}', [$pickupAddressController, 'show'])->name('show');
-    Route::get('/{address}/edit', [$pickupAddressController, 'edit'])->name('edit');
-    Route::put('/{address}', [$pickupAddressController, 'update'])->name('update');
-    Route::delete('/{address}', [$pickupAddressController, 'destroy'])->name('destroy');
-    Route::post('/{address}/toggle', [$pickupAddressController, 'toggle'])->name('toggle');
+Route::prefix('pickup_address')->name('pickup_address.')->group(function () {
+    Route::get('/', [PickupAddressController::class, 'index'])->name('index');
+    Route::get('/create', [PickupAddressController::class, 'create'])->name('create');
+    Route::post('/', [PickupAddressController::class, 'store'])->name('store');
+    Route::get('/{address}', [PickupAddressController::class, 'show'])->name('show');
+    Route::get('/{address}/edit', [PickupAddressController::class, 'edit'])->name('edit');
+    Route::put('/{address}', [PickupAddressController::class, 'update'])->name('update');
+    Route::delete('/{address}', [PickupAddressController::class, 'destroy'])->name('destroy');
+    Route::post('/{address}/toggle', [PickupAddressController::class, 'toggle'])->name('toggle');
 });
 
 // Order Shipping Routes
-Route::prefix('order/{order}/shipping')->name('order.shipping.')->group(function () use ($orderShipmentController) {
-    Route::get('/rates', [$orderShipmentController, 'getRates'])->name('rates');
-    Route::post('/book', [$orderShipmentController, 'bookShipment'])->name('book');
-    Route::get('/track', [$orderShipmentController, 'trackShipment'])->name('track');
-    Route::delete('/cancel', [$orderShipmentController, 'cancelShipment'])->name('cancel');
+Route::prefix('order/{order}/shipping')->name('order.shipping.')->group(function () {
+    Route::get('/rates', [OrderShipmentController::class, 'getRates'])->name('rates');
+    Route::post('/book', [OrderShipmentController::class, 'bookShipment'])->name('book');
+    Route::get('/track', [OrderShipmentController::class, 'trackShipment'])->name('track');
+    Route::delete('/cancel', [OrderShipmentController::class, 'cancelShipment'])->name('cancel');
 });
 
 // Manual Webhook Testing (Mock Provider Only)
-$appManualWebhookControllerPath = app_path('Http/Controllers/Admin/ManualWebhookController.php');
-$manualWebhookController = file_exists($appManualWebhookControllerPath)
-    ? \App\Http\Controllers\Admin\ManualWebhookController::class
-    : \Susheelbhai\Laraship\Http\Controllers\ManualWebhookController::class;
-
-Route::prefix('manual-webhook')->name('manual_webhook.')->group(function () use ($manualWebhookController) {
-    Route::get('/', [$manualWebhookController, 'create'])->name('create');
-    Route::post('/send', [$manualWebhookController, 'send'])->name('send');
-});
+if (config('app.env') == 'local') {
+    Route::prefix('manual-webhook')->name('manual_webhook.')->group(function () {
+        Route::get('/', [ManualWebhookController::class, 'create'])->name('create');
+        Route::post('/send', [ManualWebhookController::class, 'send'])->name('send');
+    });
+}

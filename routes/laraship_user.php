@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\User\OrderShipmentController;
 /*
 |--------------------------------------------------------------------------
 | Laraship User Routes
@@ -16,15 +16,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Use app controller if published, otherwise use package controller
-$appUserOrderShipmentControllerPath = app_path('Http/Controllers/User/OrderShipmentController.php');
-$userOrderShipmentController = file_exists($appUserOrderShipmentControllerPath)
-    ? \App\Http\Controllers\User\OrderShipmentController::class
-    : \Susheelbhai\Laraship\Http\Controllers\UserOrderShipmentController::class;
 
 // User Order Shipment Tracking Routes (with auth middleware)
-Route::middleware(['web', 'auth'])->group(function () use ($userOrderShipmentController) {
-    Route::prefix('order/{order}/shipping')->name('order.shipping.')->group(function () use ($userOrderShipmentController) {
-        Route::get('/track', [$userOrderShipmentController, 'trackShipment'])->name('track');
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::prefix('order/{order}/shipping')->name('order.shipping.')->group(function () {
+        Route::get('/track', [OrderShipmentController::class, 'trackShipment'])->name('track');
     });
 });
