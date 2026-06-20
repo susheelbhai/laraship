@@ -3,11 +3,12 @@
 namespace Susheelbhai\Laraship\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Susheelbhai\Laraship\Models\Shipment;
 
-class ShipmentOutForDeliveryNotification extends Notification
+class ShipmentOutForDeliveryNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 

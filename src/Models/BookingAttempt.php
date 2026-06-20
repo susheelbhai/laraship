@@ -41,7 +41,7 @@ class BookingAttempt extends Model
      */
     public function order(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Order::class);
+        return $this->belongsTo(config('laraship.order_model'));
     }
 
     /**

@@ -13,7 +13,7 @@ $shipping_providers = [
         'name' => 'mock-provider',
         'display_name' => 'Mock Shipping Service',
         'adapter_class' => 'Susheelbhai\Laraship\Adapters\MockAdapter',
-        'credentials' => encrypt(json_encode([
+        'credentials' => \Illuminate\Support\Facades\Crypt::encryptString(json_encode([
             'api_key' => 'test_key_123',
             'api_secret' => 'test_secret_456',
         ])),

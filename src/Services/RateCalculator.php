@@ -25,9 +25,53 @@ class RateCalculator
         $cacheKey = $this->getCacheKey($order, $address);
         $cacheTtl = config('laraship.rate_cache_ttl', 1800);
 
-        return Cache::remember($cacheKey, $cacheTtl, function () use ($order, $address) {
-            return $this->fetchRatesFromProviders($order, $address);
-        });
+        $cached = Cache::get($cacheKey);
+
+        if ($cached !== null) {
+            $restored = $this->collectionFromCachedRates($cached);
+
+            if ($restored !== null) {
+                return $restored;
+            }
+
+            Cache::forget($cacheKey);
+        }
+
+        $rates = $this->fetchRatesFromProviders($order, $address);
+
+        Cache::put(
+            $cacheKey,
+            $rates->map(fn (ShippingRate $rate): array => $rate->toArray())->values()->all(),
+            $cacheTtl
+        );
+
+        return $rates;
+    }
+
+    /**
+     * @return Collection<int, ShippingRate>|null
+     */
+    private function collectionFromCachedRates(mixed $cached): ?Collection
+    {
+        if ($cached instanceof Collection) {
+            if ($cached->first() instanceof ShippingRate) {
+                return $cached;
+            }
+
+            if ($cached->isEmpty()) {
+                return $cached;
+            }
+
+            return null;
+        }
+
+        if (! is_array($cached)) {
+            return null;
+        }
+
+        return collect($cached)->map(
+            fn (array $item): ShippingRate => ShippingRate::fromArray($item)
+        );
     }
 
     /**

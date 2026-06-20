@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ShippingProviderRequest;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Http\Request;
 use Susheelbhai\Laraship\Models\PickupAddress;
 use Susheelbhai\Laraship\Models\ShipmentProviderPickupAddress;
 use Susheelbhai\Laraship\Models\ShippingProvider;
@@ -161,8 +163,10 @@ class ShippingProviderController extends Controller
                 $providerConfig = $this->getProviderConfig($provider->adapter_class);
                 $supportsRecharge = $providerConfig['supports_recharge_api'] ?? false;
                 $rechargeUrl = $providerConfig['recharge_url'] ?? null;
+            } catch (DecryptException $e) {
+                // Credentials are corrupted or encrypted with a different key — show page without wallet info
             } catch (\Exception $e) {
-                throw $e;
+                // Other failures (API timeout, invalid credentials, etc.) — show page without wallet info
             }
         }
 
@@ -208,12 +212,18 @@ class ShippingProviderController extends Controller
      */
     public function edit(ShippingProvider $provider)
     {
+        try {
+            $credentials = $provider->credentials;
+        } catch (DecryptException $e) {
+            $credentials = [];
+        }
+
         $data = [
             'id' => $provider->id,
             'name' => $provider->name,
             'display_name' => $provider->display_name,
             'adapter_class' => $provider->adapter_class,
-            'credentials' => $provider->credentials,
+            'credentials' => $credentials,
             'config' => $provider->config,
             'is_enabled' => $provider->is_enabled,
             'priority' => $provider->priority,
@@ -329,7 +339,7 @@ class ShippingProviderController extends Controller
     /**
      * Recharge wallet for the provider.
      */
-    public function rechargeWallet(\Illuminate\Http\Request $request, ShippingProvider $provider)
+    public function rechargeWallet(Request $request, ShippingProvider $provider)
     {
         $request->validate([
             'amount' => 'required|numeric|min:100|max:100000',
@@ -450,7 +460,7 @@ class ShippingProviderController extends Controller
     /**
      * Create a new pickup address with the provider's API.
      */
-    public function createPickupAddress(ShippingProvider $provider, \Illuminate\Http\Request $request)
+    public function createPickupAddress(ShippingProvider $provider, Request $request)
     {
         $request->validate([
             'pickup_address_id' => 'required|exists:pickup_addresses,id',
@@ -538,7 +548,7 @@ class ShippingProviderController extends Controller
     /**
      * Update an existing pickup address with the provider's API.
      */
-    public function updatePickupAddress(ShippingProvider $provider, \Illuminate\Http\Request $request, $addressId)
+    public function updatePickupAddress(ShippingProvider $provider, Request $request, $addressId)
     {
         try {
             $adapter = $this->providerFactory->make($provider->name);

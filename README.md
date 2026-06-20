@@ -17,6 +17,29 @@ A comprehensive Laravel package for integrating multiple shipping providers with
 
 ## Installation
 
+
+### Local Development (Symlink)
+
+If you have the package source locally (e.g. as a git submodule or cloned alongside your project), use a path repository with symlink for instant changes:
+
+```json
+"repositories": [
+    {
+        "type": "path",
+        "url": "susheelbhai/laraship",
+        "options": {
+            "symlink": true
+        }
+    }
+]
+```
+
+Then require it:
+
+```bash
+composer require susheelbhai/laraship:@dev
+```
+
 ### Quick Install (Recommended - Automated)
 
 The package includes an **automated installer** that handles all file modifications:
